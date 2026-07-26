@@ -33,7 +33,7 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 
 ### 3.0 Domovská obrazovka a výběr hry
 - HP = **seznam registrovaných her** (CABO / Pirátské kostky / SCOUT) jako dlaždice.
-- U hry, jejíž **poslední hra je nedohraná**, je přímo na dlaždici tlačítko **Pokračovat** (skok rovnou do hraní).
+- U hry, jejíž **poslední hra je nedohraná**, je přímo na dlaždici tlačítko **Pokračovat** (skok rovnou do hraní). „Poslední hra" = **naposledy hraná** (nejvyšší `lastPlayedAt`, tj. nahoře v historii).
 - Po kliknutí na hru se otevře její **rozcestník**:
   - a) **Pokračovat v poslední hře** — jen pokud je poslední hra tohoto typu nedohraná,
   - b) **Nová hra** (viz 3.1),
@@ -65,8 +65,9 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 
 ### 3.5 Historie (v rámci konkrétní hry)
 - Z rozcestníku hry → **Historie** → seznam **všech her tohoto typu** (dohraných i nedohraných).
+- **Řazení: chronologicky sestupně podle času posledního hraní** (`lastPlayedAt`) — naposledy hraná nahoře.
 - U **dohrané** (`finished`) hry detail zobrazí zamrzlou tabulku a výsledek (jen ke čtení).
-- U **nedohrané** (`in_progress`) hry jde z detailu **pokračovat v hraní**.
+- U **nedohrané** (`in_progress`) hry jde z detailu **pokračovat v hraní**. Obnovení hry (i starší) aktualizuje `lastPlayedAt`, takže se **přesune nahoru** jako aktuálně hraná — a stává se tak „poslední hrou" pro zkratku Pokračovat (3.0).
 - U kterékoli hry jde: **smazat** (s potvrzením) a **přejmenovat / oštítkovat** (pole `label`, např. „Vánoční turnaj").
 
 ## 4. User stories
@@ -99,6 +100,7 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
     "status": "in_progress | finished",   // nedohraných může být víc současně
     "label": null,                // volitelný název/štítek (historie)
     "createdAt": 0, "endedAt": 0,
+    "lastPlayedAt": 0,            // čas posledního hraní; řadí historii a určuje „poslední hru"
     "variants": { "caboPenalty": 10, "zeroInRound": "callerOnly" },  // zvolené varianty pravidel (viz 6b)
     "players": [ { "id": "p1", "name": "Pepa", "order": 0 } ],
     "log": [
