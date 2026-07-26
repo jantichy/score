@@ -123,7 +123,7 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 Každá hra se registruje objektem přes `Games.register({...})`. Definice popisuje (koncept, doladí se při implementaci):
 
 - `id` (slug), `name`, `rulesVersion`.
-- `accentColor`, `icon`: barevný akcent a ikona hry (pro čitelný základ s odlišením her, viz sekce 9).
+- `accentColor`, `icon`: barevný akcent a ikona hry (pro čitelný základ s odlišením her, viz sekce 8b).
 - `playerRange`: `{ min, max }` — povolený počet hráčů (CABO 2–4, Pirátské kostky 2–5, SCOUT 2–5); appka mimo rozpětí nedovolí hru založit.
 - `endType`: `"targetScore"` | `"fixedRounds"`.
 - `winnerDirection`: `"min"` (CABO) | `"max"` (Pirátské kostky, SCOUT).
