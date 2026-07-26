@@ -78,7 +78,7 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 - Jako hráč chci vidět **průběžné součty a pořadí**, abych věděl, jak stojím.
 - Jako hráč chci, aby appka **sama poznala konec hry** a řekla vítěze.
 - Jako hráč CABO chci **označit, kdo volal CABO**, a mít **tlačítko Kamikaze**, ať se efekt (+50 ostatním) zapíše správně a je vidět.
-- Jako hráč CABO chci, aby appka **sama ošetřila přesně 100 → 50** (jednou za hru) a vyznačila to.
+- Jako hráč CABO chci, aby appka **sama ošetřila přesně 100 → 50** (jednou za hru pro každého hráče) a vyznačila to.
 - Jako hráč Pirátských kostek chci **tlačítka pro pirátskou loď a ostrov lebek**, ať se záporné efekty rozpočítají ostatním.
 - Jako hráč chci, aby appka **nepřišla o data** po zavření prohlížeče i po budoucí aktualizaci aplikace.
 - Jako uživatel chci **prohlížet historii** dohraných i nedohraných her a **vrátit se ke kterékoli nedohrané** a dohrát ji.
@@ -134,7 +134,7 @@ Každá hra se registruje objektem přes `Games.register({...})`. Definice popis
 - `starterRotation`: pravidlo posunu začínajícího hráče mezi koly (SCOUT: +1 po směru).
 - `validateInput(value, ctx)`: povolené hodnoty (CABO ≥ 0; Pirátské kostky násobky 100, zápor OK; SCOUT zápor OK).
 - `specialMoves[]`: tlačítka se jménem, ikonou a funkcí `apply(state, ctx)`, která vrátí efekty přes hráče (kamikaze; pirátská loď; ostrov lebek).
-- `computeTotals(state)` / transformace nad součty (CABO: přesně 100 → 50, jednou za hru).
+- `computeTotals(state)` / transformace nad součty (CABO: přesně 100 → 50, jednou za hru pro každého hráče).
 - `isGameOver(state)`: vyhodnocení konce (včetně složitého „dohrávání" u Pirátských kostek).
 - `cellFormat(...)` / vizuální příznaky (kamikaze, půlení na 100, ostrov lebek, kdo volal CABO).
 
@@ -176,13 +176,13 @@ Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
 
 | Slug | Hra | Vstup | Konec | Výhra | Zápor | Krok | Speciality |
 |------|-----|-------|-------|-------|:-----:|:----:|-----------|
-| `cabo` | CABO/KABO | všichni najednou | cílové skóre (≥ 100, viz níže) | min | ne | jednotky–desítky | kdo volal Kabo (+10 za neúspěch), Kamikaze (0 / ostatním +50), přesně 100 → 50 (1×/hra) |
+| `cabo` | CABO/KABO | všichni najednou | cílové skóre (≥ 100, viz níže) | min | ne | jednotky–desítky | kdo volal Kabo (+10 za neúspěch), Kamikaze (0 / ostatním +50), přesně 100 → 50 (1×/hráč/hra) |
 
 **CABO — upřesnění (konsolidováno ze 7 předloh, detail v `rules/cabo.md`):**
 - Penalizace za neúspěšné „Kabo!" (volající nemá nejnižší součet): **+10 bodů**.
 - 0 za kolo dostává **jen úspěšný volající „Kabo!"** (varianta A); ostatní vždy píšou svůj součet.
 - **Kamikaze** je oficiální pravidlo (dvě „12" + dvě „13"): daný hráč 0, ostatní +50. Appka aplikuje tlačítkem.
-- **Konec hry:** dosažení **≥ 100** = konec. Výjimka: **první** dosažení přesně 100 hru neukončí, ale srazí skóre na 50 (jednou za hru). Tedy druhá přesná 100 nebo překročení 100 = konec; vyhrává nejnižší součet.
+- **Konec hry:** dosažení **≥ 100** = konec. Výjimka: **první** dosažení přesně 100 hru neukončí, ale srazí skóre na 50 (jednou za hru pro každého hráče). Tedy druhá přesná 100 nebo překročení 100 = konec; vyhrává nejnižší součet.
 - Appka: volání „Kabo!" jen **vizuálně značí** (bodování 0/+10 zadává uživatel ručně); Kamikaze, přesně 100 → 50 a detekci konce **aplikuje/hlídá sama**.
 - Všechna tato rozhodnutí jsou zároveň **defaulty konfigurovatelných variant** (viz 6b) — pro konkrétní hru se dají při zakládání změnit.
 | `pirates` | Pirátské kostky | po jednom | cílové skóre (≥ cíl, výchozí 6000; s rozhodujícím kolem) | max | ano | násobky 100 | pirátská loď (mínus sobě), ostrov lebek (mínus ostatním) |
