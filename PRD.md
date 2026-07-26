@@ -31,6 +31,11 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 
 ## 3. Hlavní user flows
 
+### 3.0 Otevření aplikace
+- Je-li nějaká hra **rozehraná** (`active`), appka rovnou nabídne **pokračovat** v ní.
+- Domovská obrazovka jinak nabízí **Nová hra** a **Historie**.
+- V jeden čas je aktivní **jen jedna** hra. Když dám „Nová hra" a nějaká běží, appka se zeptá, jestli rozehranou **opustit**; opuštěná hra se označí `abandoned` a uloží do historie (nic se neztratí).
+
 ### 3.1 Nová hra
 1. Domovská obrazovka → **Nová hra**.
 2. Výběr typu hry ze seznamu registrovaných her (CABO / Pirátské kostky / SCOUT).
@@ -46,16 +51,19 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 
 ### 3.3 Oprava — undo
 - Tlačítko **Zpět** vrátí **poslední vložený záznam** (ne nutně celé kolo).
+- Undo jde mačkat **opakovaně** a odebírat záznamy postupně až k začátku hry (zásobník nad append-only `log`).
 - Granularita undo odpovídá vstupnímu modelu hry: u „všichni najednou" je záznam celé kolo, u „po jednom" je záznam výsledek jednoho hráče.
 
 ### 3.4 Konec hry
 - Engine po každém zápisu vyhodnotí podmínku konce podle definice hry.
-- Při splnění zobrazí **výsledek** (pořadí, vítěz) a hru **archivuje** se zamrzlým snímkem výsledků.
+- Při splnění zobrazí **výsledek** (pořadí, vítěz) a hru **archivuje** (`finished`) se zamrzlým snímkem výsledků.
+- **Remíza:** při shodném součtu rozhodne `tiebreak` dané hry (CABO: nižší skóre v posledním kole); nemá-li hra tiebreak, shodní hráči **sdílejí pořadí** a appka remízu vyznačí.
 - U Pirátských kostek zahrnuje konec i **rozhodující kolo** (ostatní dohrají poslední tah, možnost přehození, návrat pod hranici a auto-výhra — viz `rules/pirates.md`; „obranný hod" jen je-li zapnutá varianta `defenderReroll`).
 
 ### 3.5 Historie
-- Domovská obrazovka → **Historie** → seznam dohraných her.
+- Domovská obrazovka → **Historie** → seznam **dohraných i nedohraných** (`finished` / `abandoned`) her.
 - Detail archivované hry zobrazí zamrzlou tabulku a výsledek (jen ke čtení).
+- U hry v historii jde: **smazat** (s potvrzením) a **přejmenovat / oštítkovat** (pole `label`, např. „Vánoční turnaj").
 
 ## 4. User stories
 
@@ -83,7 +91,8 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
     "gameTypeId": "cabo",        // slug hry
     "rulesVersion": 1,            // verze pravidel modulu
     "schemaVersion": 1,          // verze obálky dat
-    "status": "active | finished",
+    "status": "active | finished | abandoned",
+    "label": null,                // volitelný název/štítek (historie)
     "createdAt": 0, "endedAt": 0,
     "variants": { "caboPenalty": 10, "zeroInRound": "callerOnly" },  // zvolené varianty pravidel (viz 6b)
     "players": [ { "id": "p1", "name": "Pepa", "order": 0 } ],
@@ -107,8 +116,11 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 Každá hra se registruje objektem přes `Games.register({...})`. Definice popisuje (koncept, doladí se při implementaci):
 
 - `id` (slug), `name`, `rulesVersion`.
+- `accentColor`, `icon`: barevný akcent a ikona hry (pro čitelný základ s odlišením her, viz sekce 9).
+- `playerRange`: `{ min, max }` — povolený počet hráčů (CABO 2–4, Pirátské kostky 2–5, SCOUT 2–5); appka mimo rozpětí nedovolí hru založit.
 - `endType`: `"targetScore"` | `"fixedRounds"`.
 - `winnerDirection`: `"min"` (CABO) | `"max"` (Pirátské kostky, SCOUT).
+- `tiebreak(state)`: volitelné pravidlo pro shodný součet (CABO: nižší skóre v posledním kole). Když chybí → shodní hráči sdílejí pořadí a appka remízu vyznačí.
 - `inputModel`: `"allPlayersAtOnce"` | `"perPlayerSequential"`.
 - `variants[]`: schéma **konfigurovatelných variant pravidel** (viz sekce 6b). Každá varianta má `id`, `label`, nápovědu, typ (`enum` / `number` / `bool`), možnosti/rozsah a **default**. Volby se ukládají do `variants` v záznamu hry a ovlivňují chování enginu (bodování, konec hry, způsob zadávání…).
 - `rounds`: pro `fixedRounds` funkce/hodnota (SCOUT = počet hráčů).
@@ -191,12 +203,23 @@ Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
 - [ ] Vstupní panel — model „všichni najednou".
 - [ ] Vstupní panel — model „po jednom" (výzva konkrétnímu hráči, postup dle pořadí + rotace).
 - [ ] Numerická klávesnice na mobilu; responzivní layout (2 sloupce ↔ přeskládání).
-- [ ] Undo posledního vloženého záznamu.
+- [ ] Undo posledního vloženého záznamu (opakovaně, zásobník).
+- [ ] Hlídání povoleného počtu hráčů dle `playerRange`.
+- [ ] Vyhodnocení remízy přes `tiebreak` (fallback sdílené pořadí).
+- [ ] Obnovení rozehrané hry po otevření; opuštění hry (`abandoned`) do historie.
+- [ ] Historie: smazání (s potvrzením) a přejmenování/štítek hry.
 - [ ] Speciální tahy jako tlačítka s efektem přes hráče.
 - [ ] Detekce konce hry (cílové skóre / počet kol) + rozhodující kolo u Pirátských kostek (vč. návratu pod hranici a auto-výhry).
 - [ ] Vizuální odlišení speciálních událostí (kamikaze, 100→50, ostrov lebek, volání CABO).
 - [ ] Archivace dohrané hry se zamrzlým snímkem + obrazovka Historie.
 - [ ] Implementace her: `cabo`, `pirates`, `scout`.
+
+## 8b. Vizuální styl a UX
+
+- **Směr:** čistý, střízlivý a dobře čitelný základ (velká čísla, jasná tabulka, minimum ozdob — čitelnost u stolu), přičemž **každá hra má svůj barevný akcent a ikonu** (`accentColor`, `icon` v definici) pro rychlé odlišení.
+- Vysoký kontrast, velké dotykové cíle; primárně světlý motiv, tmavý režim je nice-to-have (dle systému).
+- Speciální události mají konzistentní vizuální jazyk (barevné/ikonové značky): Kamikaze, 100 → 50, kdo volal Kabo, Ostrov lebek, záporné hodnoty, remíza.
+- Detailní vizuální design se dolaďuje až při implementaci.
 
 ## 9. Tech stack
 
@@ -228,7 +251,11 @@ Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
 - ~~CABO: penalizace za neúspěšné volání~~ — **vyřešeno: +10 bodů** (viz sekce 7 a `rules/cabo.md`).
 - ~~CABO: hranice konce a interakce s pravidlem 100 → 50~~ — **vyřešeno: ≥ 100 s jednorázovou výjimkou** (viz sekce 7).
 - ~~Pirátské kostky: konec hry a cílové skóre~~ — **vyřešeno: oficiální konec bez obranného hodu, konfigurovatelný cíl (default 6000)** (viz sekce 7 a `rules/pirates.md`).
+- ~~Chování při remíze~~ — **vyřešeno: `tiebreak` dané hry, jinak sdílené pořadí** (sekce 3.4 a 6).
+- ~~Počet hráčů~~ — **vyřešeno: hlídat `playerRange` dle hry** (sekce 6).
+- ~~Undo~~ — **vyřešeno: opakovaně do hloubky** (sekce 3.3).
+- ~~Rozehraná hra / opuštění~~ — **vyřešeno: obnovit + `abandoned` do historie** (sekce 3.0).
+- ~~Správa historie~~ — **vyřešeno: smazat + přejmenovat/štítek** (sekce 3.5).
+- ~~Vizuální styl~~ — **směr určen: čistý základ + akcenty her** (sekce 8b); detaily při implementaci.
 - Pirátské kostky: konkrétní hodnoty penalizací na kartách Pirátská loď jsou volitelné (appka je bere jako zadávané číslo).
-- SCOUT: potřebujeme v appce evidovat i něco navíc, nebo stačí číslo za kolo?
-- Vizuální styl / branding aplikace (barvy, typografie) — řešit při implementaci.
-- Chování při shodě bodů (remíza) — jak vyhodnotit pořadí?
+- SCOUT: zatím stačí číslo za kolo; přesné bodování a případné varianty doplníme později.
