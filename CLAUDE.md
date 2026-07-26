@@ -30,7 +30,9 @@ MVP hry: `cabo`, `pirates`, `scout`.
 score/
   index.html
   CLAUDE.md          # tento soubor
-  PRD.md             # detailní zadání
+  docs/
+    PRD.md           # detailní zadání
+    PLAN.md          # implementační plán (úkoly, rozhraní, testy)
   rules/             # plná pravidla, 1 MD na hru (trvalá reference)
     cabo.md
     pirates.md
@@ -44,7 +46,7 @@ score/
 
 ## Stav
 
-Fáze návrhu. Kód se zatím nepíše — nejdřív se ladí `PRD.md`. Lokální git repozitář (větev `main`, zatím **bez remote**).
+Fáze návrhu. Kód se zatím nepíše — zadání je v `docs/PRD.md`, implementační plán v `docs/PLAN.md`. Lokální git repozitář (větev `main`, zatím **bez remote**).
 
 ## Pravidla her
 
