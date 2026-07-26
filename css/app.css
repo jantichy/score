@@ -1,0 +1,11 @@
+/* === Reset a základ === */
+* { box-sizing: border-box; margin: 0; }
+:root {
+  --bg: #f7f6f3; --fg: #1a1a1a; --muted: #6b6b6b;
+  --card: #ffffff; --line: #dcd9d2; --accent: #2f6f4f;
+  --tap: 44px; /* minimální dotykový cíl */
+}
+body { background: var(--bg); color: var(--fg);
+  font: 16px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+main#app { max-width: 1100px; margin: 0 auto; padding: 16px; }
+button { min-height: var(--tap); font-size: 1rem; cursor: pointer; }
