@@ -20,7 +20,7 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 - vykresluje **výsledkovou tabulku** (hráč = sloupec, kolo = řádek) s průběžnými součty a aktuálním pořadím,
 - poskytuje **vstupní panel** pro aktuálně hrané kolo / hráče,
 - sama **hlídá konec hry** (podle cílového skóre nebo počtu kol) a vyhodnocuje vítěze,
-- **ukládá všechna data** lokálně do prohlížeče (IndexedDB) — včetně archivu dohraných her.
+- **ukládá všechna data** lokálně do prohlížeče (IndexedDB) — všechny hry, rozehrané i dohrané.
 
 ### Dva typy her podle konce
 
@@ -31,17 +31,20 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 
 ## 3. Hlavní user flows
 
-### 3.0 Otevření aplikace
-- Je-li nějaká hra **rozehraná** (`active`), appka rovnou nabídne **pokračovat** v ní.
-- Domovská obrazovka jinak nabízí **Nová hra** a **Historie**.
-- V jeden čas je aktivní **jen jedna** hra. Když dám „Nová hra" a nějaká běží, appka se zeptá, jestli rozehranou **opustit**; opuštěná hra se označí `abandoned` a uloží do historie (nic se neztratí).
+### 3.0 Domovská obrazovka a výběr hry
+- HP = **seznam registrovaných her** (CABO / Pirátské kostky / SCOUT) jako dlaždice.
+- U hry, jejíž **poslední hra je nedohraná**, je přímo na dlaždici tlačítko **Pokračovat** (skok rovnou do hraní).
+- Po kliknutí na hru se otevře její **rozcestník**:
+  - a) **Pokračovat v poslední hře** — jen pokud je poslední hra tohoto typu nedohraná,
+  - b) **Nová hra** (viz 3.1),
+  - c) **Historie** — všechny předchozí hry tohoto typu (viz 3.5).
+- Aplikace umožňuje mít **více nedohraných her současně** (napříč hrami i v rámci jedné hry) a vrátit se ke **kterékoli** z nich (přes historii daného typu, 3.5). Stav hry je `in_progress` nebo `finished`.
 
 ### 3.1 Nová hra
-1. Domovská obrazovka → **Nová hra**.
-2. Výběr typu hry ze seznamu registrovaných her (CABO / Pirátské kostky / SCOUT).
-3. Zadání **hráčů** v pořadí, ve kterém hrají (jméno na hráče; pořadí je pro hru pevné).
-4. Níže na téže stránce **konfigurace variant pravidel** dané hry (viz sekce 6b) — předvyplněná defaulty (poprvé „naše" defaulty, jindy nastavení z poslední hry téhož typu).
-5. Appka založí hru a zobrazí herní obrazovku (tabulka + vstup).
+1. Z rozcestníku hry → **Nová hra**.
+2. Zadání **hráčů** v pořadí, ve kterém hrají (jméno na hráče; pořadí je pro hru pevné).
+3. Níže na téže stránce **konfigurace variant pravidel** dané hry (viz sekce 6b) — předvyplněná defaulty (poprvé „naše" defaulty, jindy nastavení z poslední hry téhož typu).
+4. Appka založí hru a zobrazí herní obrazovku (tabulka + vstup).
 
 ### 3.2 Zápis průběhu (jádro)
 - **Hry „všichni najednou" (CABO, SCOUT):** vstupní panel nabídne pole pro každého hráče → zapíšu celé kolo → potvrdím → přidá se řádek (nebo se naplní předvyplněný).
@@ -60,10 +63,11 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 - **Remíza:** při shodném součtu rozhodne `tiebreak` dané hry (CABO: nižší skóre v posledním kole); nemá-li hra tiebreak, shodní hráči **sdílejí pořadí** a appka remízu vyznačí.
 - U Pirátských kostek zahrnuje konec i **rozhodující kolo** (ostatní dohrají poslední tah, možnost přehození, návrat pod hranici a auto-výhra — viz `rules/pirates.md`; „obranný hod" jen je-li zapnutá varianta `defenderReroll`).
 
-### 3.5 Historie
-- Domovská obrazovka → **Historie** → seznam **dohraných i nedohraných** (`finished` / `abandoned`) her.
-- Detail archivované hry zobrazí zamrzlou tabulku a výsledek (jen ke čtení).
-- U hry v historii jde: **smazat** (s potvrzením) a **přejmenovat / oštítkovat** (pole `label`, např. „Vánoční turnaj").
+### 3.5 Historie (v rámci konkrétní hry)
+- Z rozcestníku hry → **Historie** → seznam **všech her tohoto typu** (dohraných i nedohraných).
+- U **dohrané** (`finished`) hry detail zobrazí zamrzlou tabulku a výsledek (jen ke čtení).
+- U **nedohrané** (`in_progress`) hry jde z detailu **pokračovat v hraní**.
+- U kterékoli hry jde: **smazat** (s potvrzením) a **přejmenovat / oštítkovat** (pole `label`, např. „Vánoční turnaj").
 
 ## 4. User stories
 
@@ -76,7 +80,8 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 - Jako hráč CABO chci, aby appka **sama ošetřila přesně 100 → 50** (jednou za hru) a vyznačila to.
 - Jako hráč Pirátských kostek chci **tlačítka pro pirátskou loď a ostrov lebek**, ať se záporné efekty rozpočítají ostatním.
 - Jako hráč chci, aby appka **nepřišla o data** po zavření prohlížeče i po budoucí aktualizaci aplikace.
-- Jako uživatel chci **prohlížet historii** dohraných her.
+- Jako uživatel chci **prohlížet historii** dohraných i nedohraných her a **vrátit se ke kterékoli nedohrané** a dohrát ji.
+- Jako uživatel chci na úvodní obrazovce **vybrat hru** a u té s rozehranou poslední partií mít **rovnou tlačítko Pokračovat**.
 - Jako uživatel chci při zakládání hry **nastavit varianty pravidel** (např. penalizaci CABO 5/10), předvyplněné podle **minulé hry**, ať nemusím pořád klikat totéž.
 
 ## 5. Datový model a dopředná kompatibilita
@@ -91,7 +96,7 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
     "gameTypeId": "cabo",        // slug hry
     "rulesVersion": 1,            // verze pravidel modulu
     "schemaVersion": 1,          // verze obálky dat
-    "status": "active | finished | abandoned",
+    "status": "in_progress | finished",   // nedohraných může být víc současně
     "label": null,                // volitelný název/štítek (historie)
     "createdAt": 0, "endedAt": 0,
     "variants": { "caboPenalty": 10, "zeroInRound": "callerOnly" },  // zvolené varianty pravidel (viz 6b)
@@ -196,7 +201,8 @@ Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
 - [ ] Kostra appky bez buildu, spustitelná z `file://`.
 - [ ] IndexedDB wrapper + schéma `games`/`meta` s dopřednou kompatibilitou.
 - [ ] Registr her (`Games.register`) + načítání modulů přes `<script>`.
-- [ ] Domovská obrazovka: Nová hra / Historie.
+- [ ] Domovská obrazovka: dlaždice her + „Pokračovat" u hry s nedohranou poslední hrou.
+- [ ] Rozcestník hry: pokračovat v poslední (jen nedohraná) / nová hra / historie tohoto typu.
 - [ ] Zakládání hry: výběr typu, zadání hráčů s pořadím, **formulář variant pravidel** (viz 6b) předvyplněný z poslední hry téhož typu / defaultů.
 - [ ] Uložení a předvyplňování `meta.lastVariants[gameTypeId]`; merge s defaulty modulu (dopředná kompatibilita variant).
 - [ ] Render výsledkové tabulky (hráč = sloupec, kolo = řádek) + průběžné součty + pořadí.
@@ -206,8 +212,8 @@ Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
 - [ ] Undo posledního vloženého záznamu (opakovaně, zásobník).
 - [ ] Hlídání povoleného počtu hráčů dle `playerRange`.
 - [ ] Vyhodnocení remízy přes `tiebreak` (fallback sdílené pořadí).
-- [ ] Obnovení rozehrané hry po otevření; opuštění hry (`abandoned`) do historie.
-- [ ] Historie: smazání (s potvrzením) a přejmenování/štítek hry.
+- [ ] Více nedohraných her současně; návrat ke kterékoli z historie daného typu (`in_progress` / `finished`).
+- [ ] Historie (per typ hry): náhled výsledků, pokračování u nedohraných, smazání (s potvrzením), přejmenování/štítek.
 - [ ] Speciální tahy jako tlačítka s efektem přes hráče.
 - [ ] Detekce konce hry (cílové skóre / počet kol) + rozhodující kolo u Pirátských kostek (vč. návratu pod hranici a auto-výhry).
 - [ ] Vizuální odlišení speciálních událostí (kamikaze, 100→50, ostrov lebek, volání CABO).
@@ -231,8 +237,7 @@ Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
 ## 10. Out of scope (zatím)
 
 - Online synchronizace / sdílení mezi zařízeními, cloud.
-- Více současně rozehraných her (v jeden čas jen jedna aktivní; archiv ano).
-- Plná editace libovolné buňky (jen undo posledního záznamu).
+- Plná editace libovolné buňky (jen undo posledních záznamů).
 - Export / tisk / sdílení výsledků.
 - PWA / instalace / offline-first servisní vrstva (appka je i tak offline z podstaty).
 - Přihlašování, účty, více zapisovatelů současně.
@@ -254,7 +259,7 @@ Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
 - ~~Chování při remíze~~ — **vyřešeno: `tiebreak` dané hry, jinak sdílené pořadí** (sekce 3.4 a 6).
 - ~~Počet hráčů~~ — **vyřešeno: hlídat `playerRange` dle hry** (sekce 6).
 - ~~Undo~~ — **vyřešeno: opakovaně do hloubky** (sekce 3.3).
-- ~~Rozehraná hra / opuštění~~ — **vyřešeno: obnovit + `abandoned` do historie** (sekce 3.0).
+- ~~Rozehraná hra / návrat k nedohraným~~ — **vyřešeno: víc nedohraných současně, návrat ke kterékoli přes historii typu; workflow HP → rozcestník hry** (sekce 3.0, 3.5).
 - ~~Správa historie~~ — **vyřešeno: smazat + přejmenovat/štítek** (sekce 3.5).
 - ~~Vizuální styl~~ — **směr určen: čistý základ + akcenty her** (sekce 8b); detaily při implementaci.
 - Pirátské kostky: konkrétní hodnoty penalizací na kartách Pirátská loď jsou volitelné (appka je bere jako zadávané číslo).
