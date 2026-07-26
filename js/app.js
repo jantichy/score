@@ -10,7 +10,7 @@
       const container = document.getElementById("app");
       g.Score.dom.clear(container);
       const screen = g.Score.UI && g.Score.UI[name];
-      if (!screen) { container.textContent = `Obrazovka „${name}" neexistuje.`; return; }
+      if (!screen) { container.textContent = `Obrazovka „${name}” neexistuje.`; return; }
       screen.render(container, params || {});
     },
     async start() {
