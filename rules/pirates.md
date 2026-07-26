@@ -6,7 +6,7 @@
 
 ## Cíl hry
 
-Jako první získat **cílové skóre** (výchozí **6000 bodů**; lze nastavit i 5000 nebo 8000). Vyhrává hráč s **nejvyšším** skóre.
+Jako první získat **cílové skóre** (výchozí **6000 bodů**; lze nastavit i 5000, 8000 nebo vlastní hodnotu). Vyhrává hráč s **nejvyšším** skóre.
 
 ## Průběh kola
 
@@ -51,7 +51,7 @@ Jako první získat **cílové skóre** (výchozí **6000 bodů**; lze nastavit 
 
 ## Konec hry
 
-- Jakmile první hráč dosáhne **cílového skóre (≥ 6000)**, spustí se **rozhodující kolo**: **všichni ostatní** hráči odehrají **ještě jeden poslední tah**.
+- Jakmile první hráč dosáhne **cílového skóre (≥ cíl)**, spustí se **rozhodující kolo**: **všichni ostatní** hráči odehrají **ještě jeden poslední tah**.
 - Po rozhodujícím kole vyhrává hráč s **nejvyšším** skóre (musí být ≥ cíl).
 - Pokud po rozhodujícím kole **nikdo** nemá ≥ cíl (vedoucího někdo stáhl Ostrovem lebek pod hranici), hra **pokračuje** dál a **další** hráč, který dosáhne ≥ cíl, **automaticky vyhrává** (už bez rozhodujícího kola).
 - Řádky (kola) **přibývají** s každým odehraným kolem.
