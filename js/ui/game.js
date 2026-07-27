@@ -1,6 +1,7 @@
 (function (g) {
   "use strict";
   const el = g.Score.dom.el;
+  const domClear = g.Score.dom.clear;
 
   const FLAG_META = {
     cabo: { icon: "📢", title: "Volal Kabo" },
@@ -14,6 +15,22 @@
     shipFail: { icon: "⚓", title: "Pirátská loď — neúspěch" },
     lowestZero: { icon: "0️⃣", title: "Nejnižší součet — 0" },
   };
+
+  // Metadata parametrů speciálů pro sekvenční panel (games/*.js definuje jen id parametrů
+  // jako pole stringů — popisky/typy pro UI si drží panel sám, viz Task 12).
+  const SEQ_PARAM_META = {
+    skulls: { label: "Počet lebek", type: "number" },
+    pirateCard: { label: "Karta Pirát (×2)", type: "bool" },
+    penalty: { label: "Penalizace", type: "number", multipleOf100: true },
+  };
+
+  function validateSeqParam(paramId, meta, raw) {
+    if (meta.type === "bool") return null;
+    const parsed = /^\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
+    if (!Number.isInteger(parsed) || parsed <= 0) return "Zadej celé číslo větší než 0.";
+    if (meta.multipleOf100 && parsed % 100 !== 0) return "Zadej násobek 100.";
+    return null;
+  }
 
   function ordinalRanking(playerIds, totals, direction) {
     const sorted = [...playerIds].sort((a, b) =>
@@ -57,9 +74,14 @@
 
   function renderTable(state, game, def) {
     const playerIds = game.players.map((p) => p.id);
+    // zvýraznění příštího zápisu (jen pro sekvenční tahy, viz Task 12)
+    const nextTurn = state.next && state.next.type === "turn" ? state.next : null;
+
     const headerRow = el("tr", null,
       el("th", { class: "col-round" }, "#"),
-      ...game.players.map((p) => el("th", null, p.name)));
+      ...game.players.map((p) => el("th", {
+        class: nextTurn && p.id === nextTurn.playerId ? "next-player" : null,
+      }, p.name)));
 
     const rowCount = state.roundsPlanned !== null
       ? state.roundsPlanned
@@ -69,12 +91,14 @@
     for (let i = 0; i < rowCount; i++) {
       const round = state.rounds[i];
       const cells = playerIds.map((pid) => {
-        if (!round) return el("td", null);
+        const isNextCell = nextTurn && nextTurn.roundIndex === i && nextTurn.playerId === pid;
+        if (!round) return el("td", { class: isNextCell ? "next-cell" : null });
         const value = round.scores[pid];
         const flags = flagCell(pid, round.roundIndex, round.flags, state.totalEvents);
         const valueText = value === undefined ? "" : String(value);
         const isNeg = typeof value === "number" && value < 0;
-        return el("td", { class: isNeg ? "neg" : null }, valueText, ...flags);
+        const cls = [isNeg ? "neg" : null, isNextCell ? "next-cell" : null].filter(Boolean).join(" ") || null;
+        return el("td", { class: cls }, valueText, ...flags);
       });
       bodyRows.push(el("tr", null, el("td", { class: "col-round" }, String(i + 1)), ...cells));
     }
@@ -98,9 +122,178 @@
         el("tfoot", null, totalsRow, rankRow)));
   }
 
-  function renderSequentialPlaceholder() {
-    return el("aside", { class: "input-panel" },
-      el("p", null, "Vstup po jednom doplní další úkol."));
+  function renderSequentialPanel(game, def, state, rerender, busyRef) {
+    const next = state.next;
+    const player = game.players.find((p) => p.id === next.playerId);
+    const specialMoves = def.specialMoves || [];
+
+    const specialState = { moveId: null };
+    const paramInputs = {}; // paramId -> input element (pro aktivní speciál)
+    const errorEl = el("p", { class: "field-error" });
+    const specialErrorEl = el("p", { class: "field-error" });
+
+    const input = el("input", {
+      type: "text", inputmode: "numeric", autocomplete: "off",
+      class: "score-input score-input-wide",
+    });
+
+    const quickAmounts = [100, 200, 500, 1000];
+    const quickBtns = quickAmounts.map((amt) => el("button", {
+      type: "button", class: "btn-quick",
+      onclick: () => {
+        const raw = input.value.trim();
+        const cur = /^-?\d+$/.test(raw) ? parseInt(raw, 10) : 0;
+        input.value = String(cur + amt);
+      },
+    }, "+" + amt));
+
+    const confirmBtn = el("button", {
+      type: "button", class: "btn-action", style: "--accent:" + def.accentColor,
+      onclick: onConfirmTurn,
+    }, "Zapsat tah");
+
+    const specialArea = el("div", { class: "special-area" });
+
+    function setNormalDisabled(disabled) {
+      input.disabled = disabled;
+      confirmBtn.disabled = disabled;
+      for (const btn of quickBtns) btn.disabled = disabled;
+    }
+
+    async function onConfirmTurn() {
+      if (busyRef.value) return;
+      busyRef.value = true;
+      confirmBtn.disabled = true;
+      try {
+        errorEl.textContent = "";
+        const raw = input.value.trim();
+        const parsed = /^-?\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
+        const err = def.validateInput(parsed, { player });
+        if (err) {
+          errorEl.textContent = err;
+          input.focus();
+          return;
+        }
+        const record = {
+          playerId: next.playerId, roundIndex: next.roundIndex,
+          value: parsed, special: null, flags: {},
+        };
+        g.Score.Engine.addEntry(game, [record], Date.now());
+        await g.Score.DB.putGame(game);
+        await rerender();
+      } finally {
+        busyRef.value = false;
+        confirmBtn.disabled = false;
+      }
+    }
+
+    function renderSpecialForm(move) {
+      domClear(specialArea);
+      Object.keys(paramInputs).forEach((k) => delete paramInputs[k]);
+      specialErrorEl.textContent = "";
+
+      if (!move) return;
+
+      const rows = (move.params || []).map((paramId) => {
+        const meta = SEQ_PARAM_META[paramId] || { label: paramId, type: "number" };
+        let field;
+        if (meta.type === "bool") {
+          field = el("input", { type: "checkbox" });
+        } else {
+          field = el("input", { type: "text", inputmode: "numeric", autocomplete: "off", class: "score-input" });
+        }
+        paramInputs[paramId] = { field, meta, paramId };
+        return el("label", { class: "param-row" }, meta.label, field);
+      });
+
+      const submitBtn = el("button", {
+        type: "button", class: "btn-action",
+        onclick: () => onConfirmSpecial(move),
+      }, "Zapsat: " + move.label);
+      const cancelBtn = el("button", {
+        type: "button", class: "btn-back",
+        onclick: () => {
+          specialState.moveId = null;
+          setNormalDisabled(false);
+          renderSpecialForm(null);
+          refreshMoveButtons();
+        },
+      }, "Zrušit");
+
+      specialArea.append(...rows, specialErrorEl, submitBtn, cancelBtn);
+    }
+
+    async function onConfirmSpecial(move) {
+      if (busyRef.value) return;
+      busyRef.value = true;
+      try {
+        specialErrorEl.textContent = "";
+        const flags = {};
+        let firstErrorField = null;
+        for (const paramId of move.params || []) {
+          const { field, meta } = paramInputs[paramId];
+          if (meta.type === "bool") {
+            flags[paramId] = !!field.checked;
+            continue;
+          }
+          const raw = field.value.trim();
+          const err = validateSeqParam(paramId, meta, raw);
+          if (err) {
+            specialErrorEl.textContent = err;
+            if (!firstErrorField) firstErrorField = field;
+            continue;
+          }
+          flags[paramId] = parseInt(raw, 10);
+        }
+        if (firstErrorField) {
+          firstErrorField.focus();
+          return;
+        }
+        const record = {
+          playerId: next.playerId, roundIndex: next.roundIndex,
+          value: null, special: move.id, flags,
+        };
+        g.Score.Engine.addEntry(game, [record], Date.now());
+        await g.Score.DB.putGame(game);
+        await rerender();
+      } finally {
+        busyRef.value = false;
+      }
+    }
+
+    const moveButtons = specialMoves.map((move) => el("button", {
+      type: "button", class: "btn-special btn-move-" + move.id,
+      onclick: () => {
+        specialState.moveId = specialState.moveId === move.id ? null : move.id;
+        setNormalDisabled(!!specialState.moveId);
+        if (specialState.moveId) renderSpecialForm(move);
+        else renderSpecialForm(null);
+        refreshMoveButtons();
+      },
+    }, (move.icon ? move.icon + " " : "") + move.label));
+
+    function refreshMoveButtons() {
+      moveButtons.forEach((btn, i) => {
+        btn.classList.toggle("active", specialMoves[i].id === specialState.moveId);
+      });
+    }
+
+    const bannerChildren = [
+      el("p", { class: "turn-player" }, "Teď hraje: " + (player ? player.name : "?")),
+    ];
+    if (next.note) bannerChildren.push(el("p", { class: "turn-note" }, next.note));
+
+    const panel = el("aside", { class: "input-panel" },
+      el("div", { class: "turn-banner" }, ...bannerChildren),
+      el("div", { class: "input-row" }, input, ...quickBtns),
+      errorEl,
+      confirmBtn,
+      moveButtons.length ? el("div", { class: "special-buttons" }, ...moveButtons) : null,
+      specialArea);
+
+    setTimeout(() => { if (!input.disabled) input.focus(); }, 0);
+
+    return panel;
   }
 
   function renderInputPanel(container, game, def, state, rerender, busyRef) {
@@ -108,7 +301,7 @@
       return el("aside", { class: "input-panel" }, el("p", null, "Konec hry"));
     }
     if (def.inputModel !== "allPlayersAtOnce") {
-      return renderSequentialPlaceholder();
+      return renderSequentialPanel(game, def, state, rerender, busyRef);
     }
 
     const next = state.next;

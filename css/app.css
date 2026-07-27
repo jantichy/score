@@ -157,3 +157,29 @@ button { min-height: var(--tap); font-size: 1rem; cursor: pointer; }
 .btn-special.active {
   background: var(--accent, var(--fg)); color: #fff; border-color: var(--accent, var(--fg));
 }
+
+/* === Sekvenční vstup (Piráti) === */
+.turn-banner { display: flex; flex-direction: column; gap: 6px; }
+.turn-player { font-size: 1.3rem; font-weight: 700; }
+.turn-note {
+  background: #fff3cd; border: 1px solid #f0c419; border-radius: 6px;
+  padding: 8px 10px; font-weight: 600; color: #7a5c00;
+}
+.score-input-wide { width: 8em; font-size: 1.2rem; }
+.btn-quick {
+  min-width: var(--tap); min-height: var(--tap); padding: 0 10px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 6px;
+  font-size: 0.9rem;
+}
+.special-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.special-area { display: flex; flex-direction: column; gap: 10px; }
+.param-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.param-row input[type="text"] {
+  width: 6em; min-height: var(--tap); padding: 8px 10px; text-align: right;
+  border: 1px solid var(--line); border-radius: 6px; font-size: 1rem;
+}
+.param-row input[type="checkbox"] { width: 22px; height: 22px; }
+
+/* Zvýraznění příštího zápisu v tabulce (sekvenční model) */
+.score-table th.next-player { background: var(--accent, #f0efe9); color: #fff; }
+.score-table td.next-cell { outline: 2px solid var(--accent, var(--fg)); outline-offset: -2px; }
