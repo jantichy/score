@@ -184,6 +184,30 @@ button { min-height: var(--tap); font-size: 1rem; cursor: pointer; }
 .score-table th.next-player { background: var(--accent, #f0efe9); color: #fff; }
 .score-table td.next-cell { outline: 2px solid var(--accent, var(--fg)); outline-offset: -2px; }
 
+/* === Historie her === */
+.history-list { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+.history-item {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 8px 16px; width: 100%; text-align: left; cursor: pointer;
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 14px;
+}
+.history-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.history-date { color: var(--muted); font-size: 0.85rem; }
+.history-label { font-weight: 600; }
+.history-badge {
+  align-self: flex-start; margin-top: 2px; padding: 2px 8px;
+  background: #fff3cd; color: #7a5c00; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
+}
+.history-result { margin-top: 2px; font-weight: 600; }
+.history-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.btn-history-action {
+  min-height: var(--tap); padding: 0 10px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 6px;
+  font-size: 0.9rem;
+}
+.history-empty { color: var(--muted); margin-top: 16px; }
+
 /* === Výsledkový panel (konec hry) === */
 .result-panel { gap: 14px; }
 .result-headline { font-size: 1.3rem; font-weight: 700; text-align: center; }
