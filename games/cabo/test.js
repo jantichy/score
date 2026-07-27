@@ -127,3 +127,20 @@ test("validateInput", () => {
 test("scoreScale: hranice 100, typ avoid", () => {
   assert.deepStrictEqual(def.scoreScale({ variants: {} }), { max: 100, kind: "avoid" });
 });
+
+test("display: neúspěšné Kabo v raw módu se rozepisuje jako součet", () => {
+  const g = makeGame({ scoreEntry: "raw" });
+  caboRound(g, [{ value: 8, cabo: true }, { value: 3 }, { value: 5 }]);
+  const st = Engine.derive(g, def);
+  assert.strictEqual(st.rounds[0].display.p1, "8+10");
+  assert.strictEqual(st.rounds[0].display.p2, undefined);
+});
+
+test("display: oběti kamikaze mají +50", () => {
+  const g = makeGame();
+  caboRound(g, [{}, { kamikaze: true }, {}]);
+  const st = Engine.derive(g, def);
+  assert.strictEqual(st.rounds[0].display.p1, "+50");
+  assert.strictEqual(st.rounds[0].display.p2, undefined);
+  assert.strictEqual(st.rounds[0].display.p3, "+50");
+});

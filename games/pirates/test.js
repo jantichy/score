@@ -179,3 +179,13 @@ test("scoreScale: cílové skóre z variant, typ reach", () => {
     { max: 6000, kind: "reach" });
   assert.strictEqual(def.scoreScale({ variants: { targetScore: 8000 } }).max, 8000);
 });
+
+test("display: vlastní tah a penalizace lebek se rozepisují", () => {
+  const g = makeGame();
+  turn(g, 800);                 // p1 vlastní tah
+  skullIsland(g, 6, false);     // p2: sám 0, ostatním −600
+  const st = Engine.derive(g, def);
+  assert.strictEqual(st.rounds[0].display.p1, "800-600");
+  assert.strictEqual(st.rounds[0].display.p2, undefined);  // samotná 0 bez rozpisu
+  assert.strictEqual(st.rounds[0].display.p3, undefined);  // jediná složka → prosté −600
+});

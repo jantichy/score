@@ -116,6 +116,9 @@
       // stejného typu; bez předchozí hry prázdná pole v minimálním počtu.
       const games = await g.Score.DB.allGames();
       const lastGame = g.Score.UI.lastGameOf(games, gameTypeId);
+      // Bez historie se rozcestník přeskakuje (viz hub.js) — „← Zpět" by se
+      // na něj jen zacyklil, proto se v tom případě nekreslí.
+      const hasHistory = !!lastGame;
       let names = lastGame
         ? [...lastGame.players].sort((a, b) => a.order - b.order).map((p) => p.name)
         : Array.from({ length: def.playerRange.min }, () => "");
@@ -258,7 +261,7 @@
       container.append(
         g.Score.dom.pageHeader({
           icon: def.icon, title: def.name, accent: def.accentColor,
-          onBack: () => g.App.show("hub", { gameTypeId }),
+          onBack: hasHistory ? () => g.App.show("hub", { gameTypeId }) : null,
         }),
         el("h2", { class: "section-title" }, "Hráči"),
         playersList,

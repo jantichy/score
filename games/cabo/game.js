@@ -64,10 +64,13 @@
     validateInput(value) {
       return Number.isInteger(value) && value >= 0 ? null : "Zadej celé číslo ≥ 0.";
     },
-    specialMoves: [{ id: "kamikaze", label: "Kamikaze", icon: "💥", params: [] }],
+    specialMoves: [{ id: "kamikaze", label: "Kamikaze", icon: "🛩️", params: [] }],
     roundScores(records, ctx) {
       const scores = {};
       const flags = {};
+      // display: explicitní rozpis penalizací v buňce tabulky ("+50", "2+10") —
+      // aby zápis nevypadal jako sečtené body z karet.
+      const display = {};
       const kamikazeRecord = records.find((r) => r.special === "kamikaze");
 
       if (kamikazeRecord) {
@@ -79,10 +82,11 @@
           } else {
             scores[player.id] = 50;
             addFlag(flags, player.id, "kamikazeVictim");
+            display[player.id] = "+50";
           }
           if (rec && rec.flags && rec.flags.cabo) addFlag(flags, player.id, "cabo");
         }
-        return { scores, flags };
+        return { scores, flags, display };
       }
 
       const scoreEntry = ctx.variants.scoreEntry;
@@ -110,6 +114,7 @@
           } else {
             scores[rec.playerId] = rec.value + penalty;
             addFlag(flags, rec.playerId, "caboFail");
+            display[rec.playerId] = rec.value + "+" + penalty;
           }
         } else if (zeroInRound === "lowest" && rec.value === min) {
           scores[rec.playerId] = 0;
@@ -118,7 +123,7 @@
           scores[rec.playerId] = rec.value;
         }
       }
-      return { scores, flags };
+      return { scores, flags, display };
     },
     transformTotals(totals, tctx) {
       const memo = tctx.memo;

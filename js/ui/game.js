@@ -3,13 +3,13 @@
   const el = g.Score.dom.el;
   const domClear = g.Score.dom.clear;
 
+  // Pozn.: kamikazeVictim a halved nemají ikonu — jejich efekt se v buňce
+  // vypisuje explicitně jako rozpis ("+50", "5-50"), ikona by ho zdvojovala.
   const FLAG_META = {
     cabo: { icon: "📢", title: "Volal Kabo" },
     caboFail: { icon: "❗", title: "Neúspěšné Kabo (+penalizace)" },
     caboSuccess: { icon: "✅", title: "Úspěšné Kabo" },
-    kamikaze: { icon: "💥", title: "Kamikaze" },
-    kamikazeVictim: { icon: "➕50", title: "Kamikaze — oběť (+50)" },
-    halved: { icon: "➗", title: "Přesně 100 → 50" },
+    kamikaze: { icon: "🛩️", title: "Kamikaze" },
     skullIsland: { icon: "☠️", title: "Ostrov lebek" },
     skullVictim: { icon: "☠️➖", title: "Ostrov lebek — oběť" },
     shipFail: { icon: "⚓", title: "Pirátská loď — neúspěch" },
@@ -38,13 +38,18 @@
       const meta = FLAG_META[flag];
       if (meta) icons.push(el("span", { class: "cell-flag", title: meta.title }, meta.icon));
     }
+    return icons;
+  }
+
+  // Půlení přesné 100 → 50 se v buňce vypisuje explicitně jako „-50"
+  // za zapsanou hodnotou (např. "5-50"), ne ikonou.
+  function halvedSuffix(playerId, roundIndex, totalEvents) {
     for (const ev of totalEvents) {
-      if (ev.roundIndex === roundIndex && ev.playerId === playerId) {
-        const meta = FLAG_META[ev.type];
-        if (meta) icons.push(el("span", { class: "cell-flag", title: meta.title }, meta.icon));
+      if (ev.roundIndex === roundIndex && ev.playerId === playerId && ev.type === "halved") {
+        return el("span", { class: "cell-adjust", title: "Přesně 100 → 50" }, "-50");
       }
     }
-    return icons;
+    return null;
   }
 
   function renderTable(state, game, def) {
@@ -70,10 +75,13 @@
         if (!round) return el("td", { class: isNextCell ? "next-cell" : null });
         const value = round.scores[pid];
         const flags = flagCell(pid, round.roundIndex, round.flags, state.totalEvents);
-        const valueText = value === undefined ? "" : String(value);
+        // rozpis od pluginu ("2+10", "+50", "800-600") má přednost před sečteným číslem
+        const displayText = round.display && round.display[pid];
+        const valueText = displayText || (value === undefined ? "" : String(value));
+        const halved = halvedSuffix(pid, round.roundIndex, state.totalEvents);
         const isNeg = typeof value === "number" && value < 0;
         const cls = [isNeg ? "neg" : null, isNextCell ? "next-cell" : null].filter(Boolean).join(" ") || null;
-        return el("td", { class: cls }, valueText, ...flags);
+        return el("td", { class: cls }, valueText, halved, ...flags);
       });
       bodyRows.push(el("tr", null,
         el("td", { class: "col-round" }, String(i + 1)), ...cells));
@@ -164,7 +172,7 @@
     const out = {};
     for (const r of ranking) {
       const busted = (scale && scale.kind === "avoid" && r.total >= scale.max) || r.total < 0;
-      if (busted) { out[r.playerId] = { icon: "🧨", busted: true, tone: "busted" }; continue; }
+      if (busted) { out[r.playerId] = { icon: "💥", busted: true, tone: "busted" }; continue; }
       if (style === "winnerOnly") {
         out[r.playerId] = {
           icon: r.rank === 1 ? "🏆" : null, busted: false,
@@ -401,22 +409,9 @@
     return label;
   }
 
-  function joinNames(names) {
-    if (names.length <= 1) return names.join("");
-    if (names.length === 2) return names[0] + " a " + names[1];
-    return names.slice(0, -1).join(", ") + " a " + names[names.length - 1];
-  }
-
   function renderResultPanel(game, def, result, canFix, rerender, busyRef) {
     const ranking = result.ranking;
-    const winnerNames = result.winnerIds.map((id) => {
-      const r = ranking.find((x) => x.playerId === id);
-      return r ? r.name : "?";
-    });
-
-    const headline = result.tie
-      ? el("p", { class: "result-headline" }, "Remíza: " + joinNames(winnerNames))
-      : el("p", { class: "result-headline" }, "🏆 " + winnerNames[0]);
+    const headline = el("p", { class: "result-headline" }, "Stupně vítězů");
 
     // Finální pořadí: hráči pod sebou s medailemi/odznaky (viz rankingBadges);
     // pozadí řádků zlaté/stříbrné/bronzové pro medailisty, nevýrazně šedé

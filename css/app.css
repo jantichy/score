@@ -261,6 +261,7 @@ button:focus-visible, [role="button"]:focus-visible {
 .score-table tbody tr:last-child td { border-bottom: none; }
 .score-table .neg { color: var(--lost); }
 .cell-flag { margin-left: 4px; font-size: 0.8em; }
+.cell-adjust { color: var(--muted); }
 
 /* === Vstupní panel === */
 .input-panel {

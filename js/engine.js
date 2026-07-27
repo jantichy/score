@@ -105,7 +105,7 @@
     const rounds = [];
 
     for (const { roundIndex, records } of grouped) {
-      const { scores, flags } = def.roundScores(records, ctx);
+      const { scores, flags, display } = def.roundScores(records, ctx);
       for (const pid of playerIds) {
         if (scores[pid] !== undefined) currentTotals[pid] += scores[pid];
       }
@@ -118,7 +118,9 @@
           }
         }
       }
-      rounds.push({ roundIndex, records, scores, flags: flags || {} });
+      // display: volitelný rozpis zápisu buňky od pluginu (např. "2+10", "+50") —
+      // tabulka ho ukáže místo sečteného čísla, součty počítá vždy ze scores.
+      rounds.push({ roundIndex, records, scores, flags: flags || {}, display: display || {} });
     }
 
     const core = { rounds, totals: currentTotals };
@@ -180,7 +182,8 @@
       ranking: state.ranking,
       winnerIds: state.winnerIds,
       tie: state.tie,
-      rounds: state.rounds.map(({ roundIndex, scores, flags }) => ({ roundIndex, scores, flags })),
+      rounds: state.rounds.map(({ roundIndex, scores, flags, display }) =>
+        ({ roundIndex, scores, flags, display })),
       totals: state.totals,
       totalEvents: state.totalEvents,
     };

@@ -9,6 +9,14 @@
       const games = await g.Score.DB.allGames();
       const last = g.Score.UI.lastGameOf(games, gameTypeId);
 
+      // Bez jediné hry v historii nemá rozcestník co nabídnout — skočí se
+      // rovnou na založení nové hry (setup v tom případě nekreslí „← Zpět",
+      // jinak by se přes prázdný rozcestník zacyklil).
+      if (!games.some((game) => game.gameTypeId === gameTypeId)) {
+        g.App.show("setup", { gameTypeId });
+        return;
+      }
+
       async function rerender() {
         clear(container);
         await hub.render(container, { gameTypeId });
