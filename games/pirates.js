@@ -58,7 +58,7 @@
             cursor = order.indexOf(rec.playerId) + 1;
           } else if (
             variants.defenderReroll &&
-            order.some((id) => id !== trigger && totals[id] >= totals[trigger])
+            order.some((id) => id !== trigger && totals[id] > totals[trigger])
           ) {
             phase = "defense";
           } else {

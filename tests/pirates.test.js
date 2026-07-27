@@ -102,6 +102,16 @@ test("defenderReroll: přehozený trigger dostane obranný hod", () => {
   assert.deepStrictEqual(st.winnerIds, ["p1"]);
 });
 
+test("defenderReroll: remíza na vrcholu obranu nespouští", () => {
+  const g = makeGame({ targetScore: 1000, defenderReroll: true }, ["A", "B"]);
+  turn(g, 1000);                       // p1 trigger
+  turn(g, 1000);                       // p2 dorovnal — trigger je pořád (sdíleně) nejvyšší
+  const st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, true);
+  assert.strictEqual(st.tie, true);
+  assert.deepStrictEqual(st.winnerIds, ["p1", "p2"]);
+});
+
 test("defenderReroll vypnutý (default): žádná obrana", () => {
   const g = makeGame({ targetScore: 1000 }, ["A", "B"]);
   turn(g, 1000); turn(g, 1500);
