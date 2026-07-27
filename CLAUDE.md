@@ -19,7 +19,7 @@ Webová aplikace pro **zapisování a vyhodnocování skóre společenských her
 
 ## Konvence slugů
 
-Každá hra má jeden **slug**, používaný všude: `rules/<slug>.md`, `games/<slug>.js`, `gameTypeId` v DB.
+Každá hra má jeden **slug**, používaný všude: adresář modulu `games/<slug>/`, `gameTypeId` v DB.
 **U každé nové hry se slug vždy explicitně domluví a schválí s Honzou** dřív, než se začne implementovat.
 
 MVP hry: `cabo`, `pirates`, `scout`.
@@ -33,15 +33,17 @@ score/
   docs/
     PRD.md           # detailní zadání
     PLAN.md          # implementační plán (úkoly, rozhraní, testy)
-  rules/             # plná pravidla, 1 MD na hru (trvalá reference)
-    cabo.md
-    pirates.md
-    scout.md
-  games/             # herní moduly (plugin definice), 1 JS na hru
-    cabo.js
-    pirates.js
-    scout.js
-  (engine / css / … dle finálního návrhu implementace)
+  games/             # moduly her — vše k jedné hře pohromadě v jejím adresáři
+    cabo/
+      game.js        # plugin definice (Games.register)
+      test.js        # testy pravidel hry (spouští je tests/run.js automaticky)
+      rules.md       # plná konsolidovaná pravidla (trvalá reference)
+      rules/         # originální předlohy pravidel (PDF apod.)
+    pirates/         # …stejná struktura…
+    scout/           # …stejná struktura…
+  js/                # obecný engine a UI (neví nic o konkrétních hrách)
+  css/app.css
+  tests/             # obecné testy (engine, registr) + runner run.js
 ```
 
 ## Stav
@@ -50,9 +52,9 @@ MVP implementované na větvi `score-mvp` (jádro, IndexedDB, hry `cabo`/`pirate
 
 ## Pravidla her
 
-Plná pravidla každé hry žijí v `rules/<slug>.md`. Když v nich něco chybí nebo je nejisté, je to označené jako „k doplnění (Honza)".
+Plná pravidla každé hry žijí v `games/<slug>/rules.md`. Když v nich něco chybí nebo je nejisté, je to označené jako „k doplnění (Honza)".
 
-U CABO byla pravidla konsolidována ze 7 předloh (`rules/cabo/`); u sporných bodů (penalizace za „Kabo!", hranice konce, kdo dostává 0) platí rozhodnutí zapsaná v `rules/cabo.md`. **Kamikaze je oficiální pravidlo** (dvě „12" + dvě „13" → hráč 0, ostatní +50), ne domácí varianta.
+U CABO byla pravidla konsolidována ze 7 předloh (`games/cabo/rules/`); u sporných bodů (penalizace za „Kabo!", hranice konce, kdo dostává 0) platí rozhodnutí zapsaná v `games/cabo/rules.md`. **Kamikaze je oficiální pravidlo** (dvě „12" + dvě „13" → hráč 0, ostatní +50), ne domácí varianta.
 
 ## Automatické akce
 

@@ -1,8 +1,8 @@
 "use strict";
 const assert = require("node:assert");
-require("../js/games.js");
-require("../js/engine.js");
-require("../games/scout.js");
+require("../../js/games.js");
+require("../../js/engine.js");
+require("./game.js");
 const { Engine, Games } = globalThis.Score;
 const def = Games.get("scout");
 

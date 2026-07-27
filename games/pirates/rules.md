@@ -1,8 +1,8 @@
 # Pirátské kostky — pravidla
 
-> **Slug:** `pirates` — používá se všude (tento soubor `rules/pirates.md`, modul `games/pirates.js`, `gameTypeId` v databázi).
+> **Slug:** `pirates` — používá se všude (tento adresář `games/pirates/`: modul `game.js`, testy `test.js`, tato pravidla `rules.md`, `gameTypeId` v databázi).
 >
-> **Zdroj:** konsolidováno ze 3 předloh v `rules/pirates/` — oficiální **česká pravidla Albi** „Pirátské kostky", český **„Doplnění pravidel"** a **polská pravidla** téže hry („Piraten Kapern" / „Piraten Kapern", autor Haim Shafir, vyd. Amigo). Kde bylo třeba rozhodnout, platí volby odsouhlasené s Honzou (viz „Rozhodnutí u sporných bodů").
+> **Zdroj:** konsolidováno ze 3 předloh v `games/pirates/rules/` — oficiální **česká pravidla Albi** „Pirátské kostky", český **„Doplnění pravidel"** a **polská pravidla** téže hry („Piraten Kapern" / „Piraten Kapern", autor Haim Shafir, vyd. Amigo). Kde bylo třeba rozhodnout, platí volby odsouhlasené s Honzou (viz „Rozhodnutí u sporných bodů").
 
 ## Cíl hry
 

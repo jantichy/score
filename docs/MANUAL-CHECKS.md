@@ -25,15 +25,15 @@ provést ručně v reálném prohlížeči, ideálně na skutečném zařízení
 
 ## E2E průchody u stolu (reálná hra, ne jen harness)
 
-- [ ] **CABO** (`rules/cabo.md`): 3 hráči, běžná kola s voláním Kabo, jedno
+- [ ] **CABO** (`games/cabo/rules.md`): 3 hráči, běžná kola s voláním Kabo, jedno
       kamikaze kolo, jeden hráč přes přesnou 100 (→ 50, hra pokračuje),
       dohrání přes 100, ověřit vítěze (nejnižší skóre) a tiebreak při shodě;
       undo uprostřed hry funguje.
-- [ ] **Piráti** (`rules/pirates.md`): cíl 6000, ostrov lebek s kartou Pirát,
+- [ ] **Piráti** (`games/pirates/rules.md`): cíl 6000, ostrov lebek s kartou Pirát,
       neúspěšná loď, rozhodující kolo vč. varianty kdy Ostrov lebek stáhne
       vedoucího pod cíl (hra pokračuje do auto-výhry), totéž jednou s
       variantou `defenderReroll` zapnutou.
-- [ ] **SCOUT** (`rules/scout.md`): 4 hráči, 4 předvyplněná kola, rotace
+- [ ] **SCOUT** (`games/scout/rules.md`): 4 hráči, 4 předvyplněná kola, rotace
       startéra, záporná kola, vyhrává nejvyšší součet.
 - [ ] **Trvanlivost dat**: s rozehranou hrou zavřít prohlížeč úplně (ne jen
       tab) a znovu otevřít `index.html` — hra je v historii a jde dohrát.

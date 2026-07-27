@@ -61,7 +61,7 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 - Engine po každém zápisu vyhodnotí podmínku konce podle definice hry.
 - Při splnění zobrazí **výsledek** (pořadí, vítěz) a hru **archivuje** (`finished`) se zamrzlým snímkem výsledků.
 - **Remíza:** při shodném součtu rozhodne `tiebreak` dané hry (CABO: nižší skóre v posledním kole); nemá-li hra tiebreak, shodní hráči **sdílejí pořadí** a appka remízu vyznačí.
-- U Pirátských kostek zahrnuje konec i **rozhodující kolo** (ostatní dohrají poslední tah, možnost přehození, návrat pod hranici a auto-výhra — viz `rules/pirates.md`; „obranný hod" jen je-li zapnutá varianta `defenderReroll`).
+- U Pirátských kostek zahrnuje konec i **rozhodující kolo** (ostatní dohrají poslední tah, možnost přehození, návrat pod hranici a auto-výhra — viz `games/pirates/rules.md`; „obranný hod" jen je-li zapnutá varianta `defenderReroll`).
 
 ### 3.5 Historie (v rámci konkrétní hry)
 - Z rozcestníku hry → **Historie** → seznam **všech her tohoto typu** (dohraných i nedohraných).
@@ -172,13 +172,13 @@ SCOUT (`scout`):
 
 ## 7. Hry v MVP
 
-Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
+Plná pravidla: `games/cabo/rules.md`, `games/pirates/rules.md`, `games/scout/rules.md`.
 
 | Slug | Hra | Vstup | Konec | Výhra | Zápor | Krok | Speciality |
 |------|-----|-------|-------|-------|:-----:|:----:|-----------|
 | `cabo` | CABO/KABO | všichni najednou | cílové skóre (≥ 100, viz níže) | min | ne | jednotky–desítky | kdo volal Kabo (+10 za neúspěch), Kamikaze (0 / ostatním +50), přesně 100 → 50 (1×/hráč/hra) |
 
-**CABO — upřesnění (konsolidováno ze 7 předloh, detail v `rules/cabo.md`):**
+**CABO — upřesnění (konsolidováno ze 7 předloh, detail v `games/cabo/rules.md`):**
 - Penalizace za neúspěšné „Kabo!" (volající nemá nejnižší součet): **+10 bodů**.
 - 0 za kolo dostává **jen úspěšný volající „Kabo!"** (varianta A); ostatní vždy píšou svůj součet.
 - **Kamikaze** je oficiální pravidlo (dvě „12" + dvě „13"): daný hráč 0, ostatní +50. Appka aplikuje tlačítkem.
@@ -187,7 +187,7 @@ Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
 - Všechna tato rozhodnutí jsou zároveň **defaulty konfigurovatelných variant** (viz 6b) — pro konkrétní hru se dají při zakládání změnit.
 | `pirates` | Pirátské kostky | po jednom | cílové skóre (≥ cíl, výchozí 6000; s rozhodujícím kolem) | max | ano | násobky 100 | pirátská loď (mínus sobě), ostrov lebek (mínus ostatním) |
 
-**Pirátské kostky — upřesnění (konsolidováno ze 3 předloh, detail v `rules/pirates.md`):**
+**Pirátské kostky — upřesnění (konsolidováno ze 3 předloh, detail v `games/pirates/rules.md`):**
 - **Cílové skóre je konfigurovatelné** při zakládání hry (5000 / 6000 / 8000 / vlastní; výchozí 6000).
 - **Konec hry (oficiální, bez obranného hodu):** první ≥ cíl spustí rozhodující kolo → **všichni ostatní** odehrají 1 poslední tah → vyhrává nejvyšší ≥ cíl. Když po rozhodujícím kole nikdo nemá ≥ cíl (vedoucího stáhl Ostrov lebek), hra pokračuje a **další** hráč s ≥ cíl **auto-vyhrává** (bez dalšího rozhodujícího kola).
 - **Ostrov lebek** (tlačítko): zadá se počet lebek N (a zda karta Pirát → ×2) → aktuální hráč 0, každému ostatnímu **−100×N** (resp. −200×N). Lebky z karty se do N počítají.
@@ -250,14 +250,14 @@ Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
 - **Funkční správnost:** u každé MVP hry sedí součty, detekce konce a vítěz podle pravidel (ověřeno reálným odehráním).
 - **Rychlost zápisu:** zapsání kola/hráče na pár klepnutí, bez zdržování hry.
 - **Trvanlivost dat:** data přežijí zavření prohlížeče i aktualizaci aplikace (žádná ztráta historie).
-- **Rozšiřitelnost:** přidání nové hry = přidání `rules/<slug>.md` + `games/<slug>.js` + 1 řádek v `index.html`, beze změn v jádře.
+- **Rozšiřitelnost:** přidání nové hry = nový adresář `games/<slug>/` (`game.js`, `rules.md`, `test.js`) + 1 řádek v `index.html`, beze změn v jádře.
 - **Použitelnost:** ovladatelné jednou rukou na mobilu i pohodlně na desktopu.
 
 ## 12. Otevřené otázky k doladění
 
-- ~~CABO: penalizace za neúspěšné volání~~ — **vyřešeno: +10 bodů** (viz sekce 7 a `rules/cabo.md`).
+- ~~CABO: penalizace za neúspěšné volání~~ — **vyřešeno: +10 bodů** (viz sekce 7 a `games/cabo/rules.md`).
 - ~~CABO: hranice konce a interakce s pravidlem 100 → 50~~ — **vyřešeno: ≥ 100 s jednorázovou výjimkou** (viz sekce 7).
-- ~~Pirátské kostky: konec hry a cílové skóre~~ — **vyřešeno: oficiální konec bez obranného hodu, konfigurovatelný cíl (default 6000)** (viz sekce 7 a `rules/pirates.md`).
+- ~~Pirátské kostky: konec hry a cílové skóre~~ — **vyřešeno: oficiální konec bez obranného hodu, konfigurovatelný cíl (default 6000)** (viz sekce 7 a `games/pirates/rules.md`).
 - ~~Chování při remíze~~ — **vyřešeno: `tiebreak` dané hry, jinak sdílené pořadí** (sekce 3.4 a 6).
 - ~~Počet hráčů~~ — **vyřešeno: hlídat `playerRange` dle hry** (sekce 6).
 - ~~Undo~~ — **vyřešeno: opakovaně do hloubky** (sekce 3.3).

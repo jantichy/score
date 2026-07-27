@@ -1,8 +1,8 @@
 # CABO / KABO — pravidla
 
-> **Slug:** `cabo` — používá se všude (tento soubor `rules/cabo.md`, modul `games/cabo.js`, `gameTypeId` v databázi).
+> **Slug:** `cabo` — používá se všude (tento adresář `games/cabo/`: modul `game.js`, testy `test.js`, tato pravidla `rules.md`, `gameTypeId` v databázi).
 >
-> **Zdroj:** konsolidováno ze 7 předloh v `rules/cabo/` — dvě fyzická česká vydání **Mindok „KABO"** (ilustrace Klára Svačinová; a vydání Bézier Games / Ted Alspach, ©2019) + několik textových překladů „CABO". Kde se předlohy lišily, platí rozhodnutí odsouhlasené s Honzou (viz „Rozhodnutí u sporných bodů").
+> **Zdroj:** konsolidováno ze 7 předloh v `games/cabo/rules/` — dvě fyzická česká vydání **Mindok „KABO"** (ilustrace Klára Svačinová; a vydání Bézier Games / Ted Alspach, ©2019) + několik textových překladů „CABO". Kde se předlohy lišily, platí rozhodnutí odsouhlasené s Honzou (viz „Rozhodnutí u sporných bodů").
 
 ## Cíl hry
 

@@ -1,8 +1,8 @@
 # SCOUT / Cirkus — pravidla
 
-> **Slug:** `scout` — používá se všude (tento soubor `rules/scout.md`, modul `games/scout.js`, `gameTypeId` v databázi).
+> **Slug:** `scout` — používá se všude (tento adresář `games/scout/`: modul `game.js`, testy `test.js`, tato pravidla `rules.md`, `gameTypeId` v databázi).
 >
-> **Zdroj:** návod ze Zatrolených her — lokálně `rules/scout/scout.pdf` ([online](https://www.zatrolene-hry.cz/spolecenska-hra/cirkus-12559/)). Autor: Kei Kajino (2019), CZ vydavatel 4 Kavky / Oink Games. Pro **2–5 hráčů**, od 9 let, ~15–20 min. Jiný název: **SCOUT**.
+> **Zdroj:** návod ze Zatrolených her — lokálně `games/scout/rules/scout.pdf` ([online](https://www.zatrolene-hry.cz/spolecenska-hra/cirkus-12559/)). Autor: Kei Kajino (2019), CZ vydavatel 4 Kavky / Oink Games. Pro **2–5 hráčů**, od 9 let, ~15–20 min. Jiný název: **SCOUT**.
 
 ## Cíl hry
 
@@ -55,4 +55,4 @@ Získat po všech kolech **nejvíc bodů**. Vyhrává hráč s **nejvyšším** 
 - Tabulka je od začátku vypsaná na pevný počet řádků (= počet hráčů).
 - Mobilní vstup: numerická klávesnice (včetně znaménka mínus).
 
-> **Poznámka:** Přesné bodové hodnoty (kolik přesně za kartu / žeton / kartu v ruce, výjimka pro hráče, který kolo ukončil) najdeš v návodu `rules/scout/scout.pdf`. Pro skórovací appku je stejně nepotřebujeme — hráči si výsledné číslo za kolo spočítají u stolu a jen ho zapíšou. Kdybychom je chtěli mít i natvrdo tady v `scout.md`, vytáhnu je z toho PDF.
+> **Poznámka:** Přesné bodové hodnoty (kolik přesně za kartu / žeton / kartu v ruce, výjimka pro hráče, který kolo ukončil) najdeš v návodu `games/scout/rules/scout.pdf`. Pro skórovací appku je stejně nepotřebujeme — hráči si výsledné číslo za kolo spočítají u stolu a jen ho zapíšou. Kdybychom je chtěli mít i natvrdo tady v `scout.md`, vytáhnu je z toho PDF.
