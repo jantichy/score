@@ -53,7 +53,7 @@ Jako první získat **cílové skóre** (výchozí **6000 bodů**; lze nastavit 
 
 - Jakmile první hráč dosáhne **cílového skóre (≥ cíl)**, spustí se **rozhodující kolo**: **všichni ostatní** hráči odehrají **ještě jeden poslední tah**.
 - Po rozhodujícím kole vyhrává hráč s **nejvyšším** skóre (musí být ≥ cíl).
-- Pokud po rozhodujícím kole **nikdo** nemá ≥ cíl (vedoucího někdo stáhl Ostrovem lebek pod hranici), hra **pokračuje** dál a **další** hráč, který dosáhne ≥ cíl, **automaticky vyhrává** (už bez rozhodujícího kola).
+- Pokud po rozhodujícím kole **nikdo** nemá ≥ cíl (vedoucího někdo stáhl Ostrovem lebek pod hranici), hra **pokračuje** dál a **další** hráč, který dosáhne ≥ cíl, **automaticky vyhrává** (už bez rozhodujícího kola). Stejně se appka zachová i po **obranném hodu** (volitelná varianta `defenderReroll`) — stáhne-li obranný Ostrov lebek všechny hráče pod cíl, hra pokračuje stejně jako po neúspěšném rozhodujícím kole.
 - Řádky (kola) **přibývají** s každým odehraným kolem.
 - **Pirátská magie** (vzácné): kombinace 9 stejných kostek → hráč **automaticky vyhrává** hru. (V MVP appka neřeší automaticky; při výskytu lze hru ukončit ručně.)
 

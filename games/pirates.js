@@ -66,7 +66,17 @@
           }
         }
       } else if (phase === "defense") {
-        phase = "done";
+        // Obranný hod je zapsán jako jeden záznam. Když stáhne triggera (typicky
+        // Ostrovem lebek) pod cíl, hra pokračuje stejně jako po neúspěšném
+        // rozhodujícím kole — žádný auto-výherce, další ≥ cíl vyhrává rovnou.
+        const anyAtTarget = order.some((id) => totals[id] >= target);
+        if (!anyAtTarget) {
+          phase = "normal";
+          trigger = null;
+          cursor = order.indexOf(rec.playerId) + 1;
+        } else {
+          phase = "done";
+        }
       }
     }
 
@@ -131,33 +141,27 @@
         ],
       },
     ],
+    // Jediný zdroj bodovací pravdy: stejná applyRecord, kterou používá replay()
+    // pro detekci konce hry, se tu skládá nad nulovými součty jednoho kola.
+    // Vlajky (flags) se počítají odděleně — nejsou součástí bodovací sémantiky.
     roundScores(records, ctx) {
-      const scores = {};
+      const order = ctx.players.map((p) => p.id);
+      const scores = Object.fromEntries(order.map((id) => [id, 0]));
       const flags = {};
       const skullVictimFlagged = {};
 
       for (const rec of records) {
+        applyRecord(scores, rec, order);
         if (rec.special === "shipFail") {
-          scores[rec.playerId] = -rec.flags.penalty;
           addFlag(flags, rec.playerId, "shipFail");
         } else if (rec.special === "skullIsland") {
-          scores[rec.playerId] = (scores[rec.playerId] || 0) + 0;
           addFlag(flags, rec.playerId, "skullIsland");
-        } else {
-          scores[rec.playerId] = (scores[rec.playerId] || 0) + rec.value;
-        }
-      }
-
-      for (const rec of records) {
-        if (rec.special !== "skullIsland") continue;
-        const mult = rec.flags.pirateCard ? 2 : 1;
-        const penalty = 100 * rec.flags.skulls * mult;
-        for (const player of ctx.players) {
-          if (player.id === rec.playerId) continue;
-          scores[player.id] = (scores[player.id] || 0) - penalty;
-          if (!skullVictimFlagged[player.id]) {
-            addFlag(flags, player.id, "skullVictim");
-            skullVictimFlagged[player.id] = true;
+          for (const player of ctx.players) {
+            if (player.id === rec.playerId) continue;
+            if (!skullVictimFlagged[player.id]) {
+              addFlag(flags, player.id, "skullVictim");
+              skullVictimFlagged[player.id] = true;
+            }
           }
         }
       }

@@ -98,6 +98,29 @@ test("stažení pod cíl ostrovem lebek → hra pokračuje, další ≥ cíl aut
   assert.deepStrictEqual(st.winnerIds, ["p2"]);
 });
 
+test("obranný hod (skullIsland) stáhne všechny pod cíl → hra pokračuje, další ≥ cíl auto-vyhrává", () => {
+  const g = makeGame({ targetScore: 1000, defenderReroll: true }, ["A", "B", "C"]);
+  turn(g, 1000);                       // p1 trigger (1000)
+  skullIsland(g, 15, false);           // p2 (fronta): p1 −1500 → −500, p3 −1500 → −1500, p2 0
+  turn(g, 2500);                       // p3 (poslední ve frontě): −1500+2500 = 1000 ≥ cíl
+  let st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, false);
+  // p3 ≥ cíl a je nad triggerem (p1 = −500) → defenderReroll spouští obranu triggera
+  assert.deepStrictEqual([st.next.playerId, st.next.note], ["p1", "Obranný hod!"]);
+  skullIsland(g, 15, false);           // p1 obranný hod: p2 −1500 → −1500, p3 −1500 → −500; p1 sám beze změny (−500)
+  st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, false, "po obraně nikdo ≥ cíl → hra pokračuje (ne rovnou konec)");
+  assert.strictEqual(st.next.note, null, "zpět v normální fázi, žádné další rozhodující kolo/obrana");
+  assert.deepStrictEqual(st.totals, { p1: -500, p2: -1500, p3: -500 });
+  turn(g, 2000);                       // p2: −1500+2000 = 500, stále pod cílem
+  st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, false);
+  turn(g, 1600);                       // p3: −500+1600 = 1100 ≥ cíl → auto-výhra (decisiveHappened už bylo true)
+  st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, true);
+  assert.deepStrictEqual(st.winnerIds, ["p3"]);
+});
+
 test("fronta rozhodujícího kola: pokles triggera uprostřed fronty ji nezmění", () => {
   const g = makeGame({ targetScore: 1000 });
   turn(g, 1000);                       // p1 trigger, fronta = [p2, p3]
