@@ -53,6 +53,7 @@
     const nextTurn = state.next && state.next.type === "turn" ? state.next : null;
 
     const headerRow = el("tr", null,
+      el("th", { class: "col-round" }),
       ...game.players.map((p) => el("th", {
         class: nextTurn && p.id === nextTurn.playerId ? "next-player" : null,
       }, p.name)));
@@ -74,7 +75,8 @@
         const cls = [isNeg ? "neg" : null, isNextCell ? "next-cell" : null].filter(Boolean).join(" ") || null;
         return el("td", { class: cls }, valueText, ...flags);
       });
-      bodyRows.push(el("tr", null, ...cells));
+      bodyRows.push(el("tr", null,
+        el("td", { class: "col-round" }, String(i + 1)), ...cells));
     }
 
     return el("section", { class: "score-table" },
@@ -94,7 +96,10 @@
     return def.scoreScale({ variants });
   }
 
-  function renderScoreboard(game, def, tState) {
+  // badges (jen u dohrané hry): sloupce dostanou barvy dle finálního pořadí —
+  // zlatá/stříbrná/bronzová pro medailisty, nevýrazná šedá pro vybouchlé,
+  // ostatní výchozí barvu. U rozehrané hry se barví jen překročení hranice.
+  function renderScoreboard(game, def, tState, badges) {
     const scale = scoreScaleOf(game, def);
     const totals = tState.totals;
     const values = game.players.map((p) => totals[p.id] ?? 0);
@@ -109,9 +114,16 @@
     const totalCells = [];
     for (const p of game.players) {
       const v = totals[p.id] ?? 0;
-      const over = scale && v >= scale.max;
-      const barCls = "sb-bar" +
-        (over ? (scale.kind === "reach" ? " sb-win" : " sb-lost") : "");
+      const badge = badges ? badges[p.id] : null;
+      let barCls = "sb-bar";
+      let totalCls = "sb-total" + (v < 0 ? " neg" : "");
+      if (badge) {
+        if (badge.tone) barCls += " sb-" + badge.tone;
+        if (badge.tone === "busted") totalCls += " sb-total-busted";
+      } else if (scale && v >= scale.max) {
+        barCls += scale.kind === "reach" ? " sb-win" : " sb-lost";
+        totalCls += scale.kind === "reach" ? " sb-total-win" : " sb-total-lost";
+      }
       const barTop = v >= 0 ? (top - v) * px : zeroY;
       const barH = Math.max(Math.abs(v) * px, 2);
       nameCells.push(el("span", { class: "sb-name" }, p.name));
@@ -120,10 +132,7 @@
           class: barCls,
           style: "top:" + barTop.toFixed(1) + "px;height:" + barH.toFixed(1) + "px",
         })));
-      totalCells.push(el("span", {
-        class: "sb-total" + (v < 0 ? " neg" : "") +
-          (over ? (scale.kind === "reach" ? " sb-total-win" : " sb-total-lost") : ""),
-      }, String(v)));
+      totalCells.push(el("span", { class: totalCls }, String(v)));
     }
 
     const overlays = [];
@@ -155,11 +164,17 @@
     const out = {};
     for (const r of ranking) {
       const busted = (scale && scale.kind === "avoid" && r.total >= scale.max) || r.total < 0;
-      if (busted) { out[r.playerId] = { icon: "🧨", busted: true }; continue; }
+      if (busted) { out[r.playerId] = { icon: "🧨", busted: true, tone: "busted" }; continue; }
       if (style === "winnerOnly") {
-        out[r.playerId] = { icon: r.rank === 1 ? "🏆" : null, busted: false };
+        out[r.playerId] = {
+          icon: r.rank === 1 ? "🏆" : null, busted: false,
+          tone: r.rank === 1 ? "gold" : null,
+        };
       } else {
-        out[r.playerId] = { icon: r.rank <= 3 ? MEDALS[r.rank - 1] : null, busted: false };
+        out[r.playerId] = {
+          icon: r.rank <= 3 ? MEDALS[r.rank - 1] : null, busted: false,
+          tone: r.rank <= 3 ? ["gold", "silver", "bronze"][r.rank - 1] : null,
+        };
       }
     }
     return out;
@@ -404,14 +419,13 @@
       : el("p", { class: "result-headline" }, "🏆 " + winnerNames[0]);
 
     // Finální pořadí: hráči pod sebou s medailemi/odznaky (viz rankingBadges);
-    // vítězné řádky zeleně, vybouchlí červeně s 🧨.
+    // pozadí řádků zlaté/stříbrné/bronzové pro medailisty, nevýrazně šedé
+    // („disabled") pro vybouchlé s 🧨, ostatní bílé.
     const labels = rankLabels(ranking);
     const badges = rankingBadges(def, game, ranking);
     const rows = ranking.map((r) => {
       const b = badges[r.playerId];
-      let cls = "rank-row";
-      if (b.busted) cls += " rank-lost";
-      else if (r.rank === 1) cls += " rank-win";
+      const cls = "rank-row" + (b.tone ? " rank-" + b.tone : "");
       return el("div", { class: cls },
         el("span", { class: "rank-pos" }, b.icon || labels[r.rank]),
         el("span", { class: "rank-name" }, r.name),
@@ -721,15 +735,20 @@
           ranking: game.frozenResult.ranking,
         }
         : state;
-      // Tabulka kol se vůbec nekreslí, dokud není zapsané ani jedno kolo
-      // (ani prázdné záhlaví) — do té doby stačí prázdný graf.
-      const table = tableState.rounds.length > 0
+      // Tabulka kol se nekreslí, dokud není zapsané ani jedno kolo — VÝJIMKOU
+      // jsou hry s předem známým počtem kol (roundsPlanned, např. SCOUT):
+      // tam se od začátku vypisuje celá tabulka s očíslovanými prázdnými řádky.
+      const table = tableState.rounds.length > 0 || tableState.roundsPlanned !== null
         ? renderTable(tableState, game, def)
         : null;
 
       // Levý sloupec vypadá u rozehrané i dohrané hry stejně: nahoře graf
-      // součtů, pod ním tabulka kol. Finální pořadí ukazuje pravý panel.
-      const scoreboard = renderScoreboard(game, def, tableState);
+      // součtů, pod ním tabulka kol. Finální pořadí ukazuje pravý panel;
+      // u dohrané hry přebírá graf barvy medailí.
+      const badges = isFinished
+        ? rankingBadges(def, game, wasFinished ? game.frozenResult.ranking : state.ranking)
+        : null;
+      const scoreboard = renderScoreboard(game, def, tableState, badges);
 
       const panel = isFinished
         ? renderResultPanel(game, def, wasFinished ? game.frozenResult : state, !wasFinished, rerender, busyRef)

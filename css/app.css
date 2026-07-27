@@ -6,6 +6,10 @@
   --btn: #edebe4; --btn-hover: #e2dfd5; --btn-border: #cfcbc0;
   --win: #1e7e46; --win-bg: #e6f4ea;
   --lost: #b91c1c; --lost-bg: #fdecea;
+  --gold: #c9a227; --gold-bg: #faf3da;
+  --silver: #9aa0a6; --silver-bg: #f1f2f4;
+  --bronze: #b0713a; --bronze-bg: #f5e8dc;
+  --busted: #a8a29a; --busted-bg: #efedea;
   --tap: 44px; /* minimální dotykový cíl */
 }
 body { background: var(--bg); color: var(--fg);
@@ -184,6 +188,7 @@ button:focus-visible, [role="button"]:focus-visible {
 }
 .sb-total-win { color: var(--win); }
 .sb-total-lost { color: var(--lost); }
+.sb-total-busted { color: var(--busted); }
 .sb-bars {
   position: relative; display: flex; gap: 8px; margin: 8px 0 6px;
   border-bottom: 1px solid var(--line);
@@ -196,6 +201,11 @@ button:focus-visible, [role="button"]:focus-visible {
 }
 .sb-bar.sb-win { background: var(--win); }
 .sb-bar.sb-lost { background: var(--lost); }
+/* Barvy sloupců dle finálního pořadí (jen dohraná hra) */
+.sb-bar.sb-gold { background: var(--gold); }
+.sb-bar.sb-silver { background: var(--silver); }
+.sb-bar.sb-bronze { background: var(--bronze); }
+.sb-bar.sb-busted { background: var(--busted); opacity: 0.55; }
 .sb-line {
   position: absolute; left: 0; right: 0; height: 0; z-index: 1;
   border-top: 2px dashed var(--muted); pointer-events: none;
@@ -220,10 +230,18 @@ button:focus-visible, [role="button"]:focus-visible {
 .rank-pos { width: 3em; font-weight: 700; color: var(--muted); }
 .rank-name { flex: 1; font-weight: 600; }
 .rank-total { font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
-.rank-win { background: var(--win-bg); border-color: var(--win); }
-.rank-win .rank-pos, .rank-win .rank-total { color: var(--win); }
-.rank-lost { background: var(--lost-bg); border-color: var(--lost); }
-.rank-lost .rank-pos, .rank-lost .rank-total { color: var(--lost); }
+.rank-gold { background: var(--gold-bg); border-color: var(--gold); }
+.rank-gold .rank-pos, .rank-gold .rank-total { color: #8a6d0b; }
+.rank-silver { background: var(--silver-bg); border-color: var(--silver); }
+.rank-silver .rank-pos, .rank-silver .rank-total { color: #5f6368; }
+.rank-bronze { background: var(--bronze-bg); border-color: var(--bronze); }
+.rank-bronze .rank-pos, .rank-bronze .rank-total { color: #8c5a2e; }
+/* Vybouchlí — nevýrazně šedě, jako „disabled" */
+.rank-busted {
+  background: var(--busted-bg); border-color: var(--line);
+  color: var(--muted); opacity: 0.8;
+}
+.rank-busted .rank-pos, .rank-busted .rank-total { color: var(--busted); }
 
 /* === Tabulka kol === */
 .score-table { overflow-x: auto; min-width: 0; }
@@ -236,6 +254,10 @@ button:focus-visible, [role="button"]:focus-visible {
   white-space: nowrap; font-variant-numeric: tabular-nums; min-width: 64px;
 }
 .score-table th { background: #f0efe9; font-weight: 600; }
+.score-table .col-round {
+  width: 3em; min-width: 0; color: var(--muted); font-weight: 600;
+  font-size: 0.85rem;
+}
 .score-table tbody tr:last-child td { border-bottom: none; }
 .score-table .neg { color: var(--lost); }
 .cell-flag { margin-left: 4px; font-size: 0.8em; }
