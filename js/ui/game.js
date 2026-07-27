@@ -103,7 +103,7 @@
       el("p", null, "Vstup po jednom doplní další úkol."));
   }
 
-  function renderInputPanel(container, game, def, state, rerender) {
+  function renderInputPanel(container, game, def, state, rerender, busyRef) {
     if (state.finished) {
       return el("aside", { class: "input-panel" }, el("p", null, "Konec hry"));
     }
@@ -139,9 +139,10 @@
       const errorEl = el("p", { class: "field-error" });
       errorEls[p.id] = errorEl;
 
+      const showStarter = typeof def.starter === "function" && p.order === starterIndex;
       const rowChildren = [
         el("span", { class: "input-player-name" },
-          p.name, p.order === starterIndex ? el("span", { class: "starter-badge" }, " začíná") : null),
+          p.name, showStarter ? el("span", { class: "starter-badge" }, " začíná") : null),
         input,
       ];
 
@@ -197,52 +198,61 @@
     }, "Zapsat kolo");
 
     async function onConfirm() {
-      for (const pid of Object.keys(errorEls)) errorEls[pid].textContent = "";
+      // re-entrancy guard: brání dvojímu zápisu kola při dvojkliku (viz undo handler v render())
+      if (busyRef.value) return;
+      busyRef.value = true;
+      confirmBtn.disabled = true;
+      try {
+        for (const pid of Object.keys(errorEls)) errorEls[pid].textContent = "";
 
-      const specialActive = !!specialState.playerId;
-      const records = [];
-      let firstErrorInput = null;
+        const specialActive = !!specialState.playerId;
+        const records = [];
+        let firstErrorInput = null;
 
-      for (const p of game.players) {
-        const flags = {};
-        if (caboState.playerId === p.id) flags.cabo = true;
+        for (const p of game.players) {
+          const flags = {};
+          if (caboState.playerId === p.id) flags.cabo = true;
 
-        if (specialActive) {
+          if (specialActive) {
+            records.push({
+              playerId: p.id,
+              roundIndex,
+              value: null,
+              special: p.id === specialState.playerId ? specialState.moveId : null,
+              flags,
+            });
+            continue;
+          }
+
+          const raw = inputs[p.id].value.trim();
+          const parsed = /^-?\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
+          const err = def.validateInput(parsed, { player: p });
+          if (err) {
+            errorEls[p.id].textContent = err;
+            if (!firstErrorInput) firstErrorInput = inputs[p.id];
+            continue;
+          }
           records.push({
             playerId: p.id,
             roundIndex,
-            value: null,
-            special: p.id === specialState.playerId ? specialState.moveId : null,
+            value: parsed,
+            special: null,
             flags,
           });
-          continue;
         }
 
-        const raw = inputs[p.id].value.trim();
-        const parsed = /^-?\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
-        const err = def.validateInput(parsed, { player: p });
-        if (err) {
-          errorEls[p.id].textContent = err;
-          if (!firstErrorInput) firstErrorInput = inputs[p.id];
-          continue;
+        if (firstErrorInput) {
+          firstErrorInput.focus();
+          return;
         }
-        records.push({
-          playerId: p.id,
-          roundIndex,
-          value: parsed,
-          special: null,
-          flags,
-        });
-      }
 
-      if (firstErrorInput) {
-        firstErrorInput.focus();
-        return;
+        g.Score.Engine.addEntry(game, records, Date.now());
+        await g.Score.DB.putGame(game);
+        await rerender();
+      } finally {
+        busyRef.value = false;
+        confirmBtn.disabled = false;
       }
-
-      g.Score.Engine.addEntry(game, records, Date.now());
-      await g.Score.DB.putGame(game);
-      rerender();
     }
 
     const panel = el("aside", { class: "input-panel" },
@@ -275,13 +285,25 @@
         await gameScreen.render(container, { gameId });
       }
 
+      // sdílený re-entrancy guard mezi undo a potvrzením kola (viz onConfirm v renderInputPanel):
+      // brání dvojímu zápisu/odebrání kola při rychlém dvojkliku, dokud běží mutace + DB.putGame.
+      const busyRef = { value: false };
+
       const undoBtn = el("button", {
         class: "btn-back btn-undo",
         disabled: game.log.length === 0 ? "disabled" : null,
         onclick: async () => {
-          g.Score.Engine.undo(game);
-          await g.Score.DB.putGame(game);
-          rerender();
+          if (busyRef.value) return;
+          busyRef.value = true;
+          undoBtn.disabled = true;
+          try {
+            g.Score.Engine.undo(game);
+            await g.Score.DB.putGame(game);
+            await rerender();
+          } finally {
+            busyRef.value = false;
+            undoBtn.disabled = false;
+          }
         },
       }, "Zpět");
 
@@ -296,7 +318,7 @@
         undoBtn);
 
       const table = renderTable(state, game, def);
-      const panel = renderInputPanel(container, game, def, state, rerender);
+      const panel = renderInputPanel(container, game, def, state, rerender, busyRef);
 
       container.append(
         header,
