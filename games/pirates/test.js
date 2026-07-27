@@ -20,6 +20,7 @@ function entry(game, patch) {
 const turn = (g, value) => entry(g, { value });
 const skullIsland = (g, skulls, pirateCard) =>
   entry(g, { special: "skullIsland", flags: { skulls, pirateCard: !!pirateCard } });
+const bust = (g) => entry(g, { special: "bust", flags: {} });
 
 test("střídání hráčů v pořadí, roundIndex per hráč", () => {
   const g = makeGame();
@@ -53,6 +54,25 @@ test("dva ostrovy lebek ve stejném roundIndex se kumulují", () => {
   turn(g, 0);                         // p3
   const st = Engine.derive(g, def);
   assert.deepStrictEqual(st.totals, { p1: -300, p2: -500, p3: -800 });
+});
+
+test("vybouchnutí: 0 bodů, tah se počítá a hraje další hráč", () => {
+  const g = makeGame();
+  turn(g, 300);
+  bust(g);                            // p2
+  const st = Engine.derive(g, def);
+  assert.deepStrictEqual(st.totals, { p1: 300, p2: 0, p3: 0 });
+  assert.ok(st.rounds[0].flags.p2.includes("bust"));
+  assert.strictEqual(st.next.playerId, "p3");
+});
+
+test("vybouchnutí v rozhodujícím kole je platný poslední tah", () => {
+  const g = makeGame({ targetScore: 1000 }, ["A", "B"]);
+  turn(g, 1000);                       // p1 trigger
+  bust(g);                             // p2 vybouchl v posledním tahu
+  const st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, true);
+  assert.deepStrictEqual(st.winnerIds, ["p1"]);
 });
 
 test("dosažení cíle spustí rozhodující kolo pro ostatní", () => {

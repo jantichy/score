@@ -134,7 +134,12 @@
       const playersList = el("div", { class: "player-chips" });
       const addBtn = el("button", {
         type: "button", class: "btn-add-player",
-        onclick: () => { names.push(""); renderPlayers(); },
+        onclick: () => {
+          names.push("");
+          renderPlayers();
+          const inputs = playersList.querySelectorAll("input");
+          inputs[inputs.length - 1].focus();
+        },
       }, "+ Přidat hráče");
 
       function renderPlayers() {

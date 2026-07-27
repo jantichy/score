@@ -13,6 +13,8 @@
       for (const id of order) {
         if (id !== rec.playerId) totals[id] -= penalty;
       }
+    } else if (rec.special === "bust") {
+      // Vybouchnutí (tři lebky): 0 bodů, tah se ale počítá.
     } else {
       totals[rec.playerId] += rec.value;
     }
@@ -106,6 +108,7 @@
     // Ikony a tooltipy vlajek v tabulce.
     flagMeta: {
       skullIsland: { icon: "☠️", title: "Ostrov lebek" },
+      bust: { icon: "💥", title: "Vybouchnutí — tři lebky, 0 bodů" },
     },
     variants: [
       {
@@ -143,6 +146,8 @@
           { id: "pirateCard", label: "Karta Pirát (×2)", type: "bool" },
         ],
       },
+      // Bez parametrů → formulář režimu je jen tlačítko Zapsat, žádný input.
+      { id: "bust", label: "Vybouchnutí", icon: "💥", params: [] },
     ],
     // Jediný zdroj bodovací pravdy: stejná applyRecord, kterou používá replay()
     // pro detekci konce hry, se tu skládá nad nulovými součty jednoho kola.
@@ -162,7 +167,10 @@
       for (const rec of records) {
         applyRecord(scores, rec, order);
         touched.add(rec.playerId);
-        if (rec.special === "skullIsland") {
+        if (rec.special === "bust") {
+          addFlag(flags, rec.playerId, "bust");
+          parts[rec.playerId].push(0);
+        } else if (rec.special === "skullIsland") {
           // Ikonu ☠️ dostává jen pachatel; oběti poznají penalizaci z rozpisu buňky.
           addFlag(flags, rec.playerId, "skullIsland");
           parts[rec.playerId].push(0);
