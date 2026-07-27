@@ -20,7 +20,7 @@ button { min-height: var(--tap); font-size: 1rem; cursor: pointer; }
   background: var(--card); border: 1px solid var(--line);
   border-left: 6px solid var(--accent, var(--fg));
   border-radius: 8px; text-align: left;
-  font-size: 1.1rem;
+  font-size: 1.1rem; cursor: pointer;
 }
 .tile-icon { font-size: 1.8rem; line-height: 1; }
 .tile-name { flex: 1; font-weight: 600; }
