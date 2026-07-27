@@ -114,7 +114,6 @@
 
       let names = Array.from({ length: def.playerRange.min }, () => "");
       const playersError = el("p", { class: "field-error" });
-      const formError = el("p", { class: "field-error" });
 
       const playersList = el("div", { class: "setup-players" });
       const addBtn = el("button", {
@@ -177,7 +176,6 @@
       async function onSubmit() {
         let hasError = false;
         playersError.textContent = "";
-        formError.textContent = "";
 
         const trimmed = names.map((n) => n.trim());
         if (trimmed.some((n) => n === "")) {
@@ -229,7 +227,6 @@
           ? el("h2", { class: "setup-section-title" }, "Varianty pravidel")
           : null,
         variantsSection,
-        formError,
         submitBtn,
         el("button", {
           class: "btn-back",
