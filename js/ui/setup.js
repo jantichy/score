@@ -112,16 +112,22 @@
       const lastVariantsAll = (await g.Score.DB.getMeta("lastVariants")) || {};
       const initialVariants = g.Score.Games.mergeVariants(def, lastVariantsAll[gameTypeId]);
 
-      // Předvyplnění hráčů (počet, jména i pořadí) z naposledy hrané hry
-      // stejného typu; bez předchozí hry prázdná pole v minimálním počtu.
+      // Předvyplnění hráčů (počet, jména i pořadí): z naposledy hrané hry
+      // stejného typu; u úplně první hry daného typu z naposledy hrané hry
+      // KTERÉHOKOLIV typu (oříznuté na maximum hráčů této hry). Prázdná pole
+      // jen když se v celé aplikaci ještě nikdy nic nehrálo.
       const games = await g.Score.DB.allGames();
       const lastGame = g.Score.UI.lastGameOf(games, gameTypeId);
-      // Bez historie se rozcestník přeskakuje (viz hub.js) — „← Zpět" by se
-      // na něj jen zacyklil, proto se v tom případě nekreslí.
+      // Bez historie tohoto typu se rozcestník přeskakuje (viz hub.js) —
+      // „← Zpět" by se na něj jen zacyklil, proto se v tom případě nekreslí.
       const hasHistory = !!lastGame;
-      let names = lastGame
-        ? [...lastGame.players].sort((a, b) => a.order - b.order).map((p) => p.name)
-        : Array.from({ length: def.playerRange.min }, () => "");
+      const sourceGame = lastGame || games.reduce(
+        (best, game) => (!best || game.lastPlayedAt > best.lastPlayedAt ? game : best), null);
+      let names = sourceGame
+        ? [...sourceGame.players].sort((a, b) => a.order - b.order)
+            .map((p) => p.name).slice(0, def.playerRange.max)
+        : [];
+      while (names.length < def.playerRange.min) names.push("");
       let dragIndex = null;
       const playersError = el("p", { class: "field-error" });
 

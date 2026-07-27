@@ -212,7 +212,7 @@
     }, "±");
   }
 
-  function renderSequentialPanel(game, def, state, rerender, busyRef, undoBtn) {
+  function renderSequentialPanel(game, def, state, rerender, busyRef, undoBtn, prefill) {
     const next = state.next;
     const player = game.players.find((p) => p.id === next.playerId);
     const specialMoves = def.specialMoves || [];
@@ -376,6 +376,30 @@
       });
     }
 
+    // Předvyplnění vráceného tahu (viz rerender({prefill}) u undo/opravy):
+    // po undo je na tahu tentýž hráč — obnoví se hodnota, nebo otevřený
+    // speciál s vyplněnými parametry.
+    if (prefill && prefill.length === 1 && prefill[0].playerId === next.playerId) {
+      const rec = prefill[0];
+      if (rec.special) {
+        const move = specialMoves.find((m) => m.id === rec.special);
+        if (move) {
+          specialState.moveId = move.id;
+          setNormalDisabled(true);
+          renderSpecialForm(move);
+          refreshMoveButtons();
+          for (const param of move.params || []) {
+            const entry = paramInputs[param.id];
+            if (!entry) continue;
+            if (param.type === "bool") entry.field.checked = !!rec.flags[param.id];
+            else if (rec.flags[param.id] !== undefined) entry.field.value = String(rec.flags[param.id]);
+          }
+        }
+      } else if (rec.value !== null && rec.value !== undefined) {
+        input.value = String(rec.value);
+      }
+    }
+
     const bannerChildren = [
       el("p", { class: "turn-player" }, "Teď hraje: " + (player ? player.name : "?")),
     ];
@@ -440,10 +464,12 @@
           busyRef.value = true;
           fixBtn.disabled = true;
           try {
+            const maxEntry = Math.max(...game.log.map((r) => r.entryId));
+            const removed = game.log.filter((r) => r.entryId === maxEntry);
             g.Score.Engine.unfreeze(game);
             g.Score.Engine.undo(game);
             await g.Score.DB.putGame(game);
-            await rerender();
+            await rerender({ prefill: removed });
           } finally {
             busyRef.value = false;
             fixBtn.disabled = false;
@@ -460,9 +486,9 @@
   // params: [] — nemá je co kreslit). Budoucí all-at-once hra se specialMove, který nese
   // vlastní parametry (jako Piráti v sekvenčním panelu), bude vyžadovat rozšíření zdejšího
   // renderování o formulář parametrů (viz renderSpecialForm v renderSequentialPanel).
-  function renderInputPanel(game, def, state, rerender, busyRef, undoBtn) {
+  function renderInputPanel(game, def, state, rerender, busyRef, undoBtn, prefill) {
     if (def.inputModel !== "allPlayersAtOnce") {
-      return renderSequentialPanel(game, def, state, rerender, busyRef, undoBtn);
+      return renderSequentialPanel(game, def, state, rerender, busyRef, undoBtn, prefill);
     }
 
     const next = state.next;
@@ -568,6 +594,24 @@
     }
     refreshToggleStates();
 
+    // Předvyplnění vráceného kola (viz rerender({prefill}) u undo/opravy):
+    // hodnoty, označení Kabo i aktivní kamikaze se obnoví, stačí opravit detail.
+    if (prefill) {
+      for (const rec of prefill) {
+        if (!inputs[rec.playerId]) continue;
+        if (rec.flags && rec.flags.cabo) caboState.playerId = rec.playerId;
+        if (rec.special) {
+          specialState.playerId = rec.playerId;
+          specialState.moveId = rec.special;
+        }
+        if (rec.value !== null && rec.value !== undefined) {
+          inputs[rec.playerId].value = String(rec.value);
+        }
+      }
+      setNumericInputsDisabled();
+      refreshToggleStates();
+    }
+
     const confirmBtn = el("button", {
       type: "button", class: "btn-action", style: "--accent:" + def.accentColor,
       onclick: onConfirm,
@@ -611,7 +655,11 @@
             continue;
           }
 
-          const raw = inputs[p.id].value.trim();
+          let raw = inputs[p.id].value.trim();
+          // CABO: volající s nevyplněným skóre = hráči si u stolu potvrdili
+          // úspěšné Kabo → zapisuje se mu 0 (v raw módu 0 = nejnižší součet,
+          // vede na tentýž výsledek).
+          if (raw === "" && hasCaboFlag && caboState.playerId === p.id) raw = "0";
           const parsed = /^-?\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
           const err = def.validateInput(parsed, { player: p });
           if (err) {
@@ -662,7 +710,7 @@
   }
 
   const gameScreen = {
-    async render(container, { gameId }) {
+    async render(container, { gameId, prefill }) {
       // idempotentní vyčištění: App.show čistí kontejner před prvním renderem, ale interní
       // rerender() (po zápisu kola/tahu, undo, opravě dohrané hry) volá gameScreen.render
       // přímo bez App.show mezikroku — bez clear() by se celý screen jen přidával vedle starého.
@@ -689,8 +737,10 @@
       }
       const isFinished = wasFinished || state.finished;
 
-      async function rerender() {
-        await gameScreen.render(container, { gameId });
+      // rerender(extra): extra.prefill = záznamy právě odmazané přes undo/opravu —
+      // vstupní panel se jimi předvyplní, aby se kolo/tah nemusely psát celé znovu.
+      async function rerender(extra) {
+        await gameScreen.render(container, { gameId, ...(extra || {}) });
       }
 
       // sdílený re-entrancy guard mezi undo/opravou a potvrzením kola (viz onConfirm
@@ -706,9 +756,11 @@
           busyRef.value = true;
           undoBtn.disabled = true;
           try {
+            const maxEntry = Math.max(...game.log.map((r) => r.entryId));
+            const removed = game.log.filter((r) => r.entryId === maxEntry);
             g.Score.Engine.undo(game);
             await g.Score.DB.putGame(game);
-            await rerender();
+            await rerender({ prefill: removed });
           } finally {
             busyRef.value = false;
             undoBtn.disabled = false;
@@ -750,7 +802,7 @@
 
       const panel = isFinished
         ? renderResultPanel(game, def, wasFinished ? game.frozenResult : state, !wasFinished, rerender, busyRef)
-        : renderInputPanel(game, def, state, rerender, busyRef, undoBtn);
+        : renderInputPanel(game, def, state, rerender, busyRef, undoBtn, prefill);
 
       container.append(
         header,

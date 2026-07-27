@@ -130,7 +130,12 @@ button:focus-visible, [role="button"]:focus-visible {
   .setup-variants { grid-template-columns: 1fr 1fr; }
 }
 .variant-field { display: flex; flex-direction: column; gap: 4px; }
-.variant-label { font-weight: 600; }
+/* Popisky variant sdílejí formát sekčního nadpisu „Hráči" — nastavení hráčů
+   i pravidel jsou rovnocenné parametry zakládané hry. */
+.variant-label {
+  font-size: 1rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
 .variant-help { color: var(--muted); font-size: 0.9rem; }
 .variant-radio-group { display: flex; flex-wrap: wrap; gap: 12px 20px; }
 .radio-option, .checkbox-option {
