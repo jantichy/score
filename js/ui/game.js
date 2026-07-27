@@ -55,6 +55,20 @@
     return label;
   }
 
+  // Patička „Pořadí" u DOKONČENÉ hry musí odpovídat vítězi vyhlášenému výsledkovým
+  // panelem, tedy zohledňovat def.tiebreak — proto se staví z hotového state.ranking /
+  // frozenResult.ranking (rank hodnoty z engine, viz rankPlayers v js/engine.js), NE
+  // z prostého porovnání součtů jako ordinalRanking (to je jen pro rozehranou hru,
+  // kde žádné konečné pořadí/tiebreak ještě nedává smysl).
+  function rankLabelFromRanking(playerIds, ranking) {
+    const rankByPlayer = {};
+    for (const r of ranking) rankByPlayer[r.playerId] = r.rank;
+    const label = rankLabels(ranking);
+    const out = {};
+    for (const pid of playerIds) out[pid] = label[rankByPlayer[pid]];
+    return out;
+  }
+
   function flagCell(playerId, roundIndex, roundFlags, totalEvents) {
     const icons = [];
     const flagsForPlayer = (roundFlags && roundFlags[playerId]) || [];
@@ -109,7 +123,9 @@
         return el("td", { class: total < 0 ? "neg" : null }, String(total));
       }));
 
-    const rankLabel = ordinalRanking(playerIds, state.totals, def.winnerDirection);
+    const rankLabel = state.ranking
+      ? rankLabelFromRanking(playerIds, state.ranking)
+      : ordinalRanking(playerIds, state.totals, def.winnerDirection);
     const rankRow = el("tr", { class: "row-ranking" },
       el("td", { class: "col-round" }, "Pořadí"),
       // sdílené místo (label obsahuje "–", např. "1.–2.") = remíza na daném místě -> 🤝
@@ -396,7 +412,11 @@
     return el("aside", { class: "input-panel result-panel" }, ...children);
   }
 
-  function renderInputPanel(container, game, def, state, rerender, busyRef, undoBtn) {
+  // Pozn.: all-at-once panel zatím nevykresluje def.specialMoves[].params (kamikaze má
+  // params: [] — nemá je co kreslit). Budoucí all-at-once hra se specialMove, který nese
+  // vlastní parametry (jako Piráti v sekvenčním panelu), bude vyžadovat rozšíření zdejšího
+  // renderování o formulář parametrů (viz renderSpecialForm v renderSequentialPanel).
+  function renderInputPanel(game, def, state, rerender, busyRef, undoBtn) {
     if (def.inputModel !== "allPlayersAtOnce") {
       return renderSequentialPanel(game, def, state, rerender, busyRef, undoBtn);
     }
@@ -647,13 +667,14 @@
           totalEvents: game.frozenResult.totalEvents,
           roundsPlanned: null,
           next: null,
+          ranking: game.frozenResult.ranking,
         }
         : state;
       const table = renderTable(tableState, game, def);
 
       const panel = isFinished
         ? renderResultPanel(game, def, wasFinished ? game.frozenResult : state, !wasFinished, rerender, busyRef)
-        : renderInputPanel(container, game, def, state, rerender, busyRef, undoBtn);
+        : renderInputPanel(game, def, state, rerender, busyRef, undoBtn);
 
       container.append(
         header,
