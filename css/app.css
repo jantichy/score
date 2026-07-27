@@ -268,7 +268,6 @@ button:focus-visible, [role="button"]:focus-visible {
   background: var(--card); border: 1px solid var(--line); border-radius: 8px;
   padding: 16px; display: flex; flex-direction: column; gap: 12px;
 }
-.input-panel h2 { font-size: 1.1rem; }
 /* Řádek hráče: jméno na vlastním řádku, veškeré ovládání pod ním (wrapuje jako celek) */
 .input-row { display: flex; flex-direction: column; gap: 6px; }
 .input-row .field-error { margin: 0; }
@@ -332,26 +331,24 @@ button:focus-visible, [role="button"]:focus-visible {
 
 /* === Historie her === */
 .history-list { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 16px; }
+/* Jeden řádek: [hráči / pořadí] [label (flex 1)] [datum] [✏️] [🗑] */
 .history-item {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-  gap: 8px 16px; width: 100%; text-align: left; cursor: pointer;
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 8px 14px; width: 100%; text-align: left; cursor: pointer;
   background: var(--card); border: 1px solid var(--line); border-radius: 8px;
-  padding: 10px 14px;
+  padding: 8px 14px;
   transition: box-shadow .15s ease, border-color .15s ease;
 }
 .history-item:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
   border-color: var(--accent, var(--fg));
 }
-.history-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.history-date { color: var(--muted); font-size: 0.85rem; }
-.history-label { font-weight: 600; }
-.history-badge {
-  align-self: flex-start; margin-top: 2px; padding: 2px 8px;
-  background: #fff3cd; color: #7a5c00; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
+.history-lead { font-weight: 600; min-width: 0; }
+.history-label {
+  flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.history-result { margin-top: 2px; font-weight: 600; }
-.history-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.history-date { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
 .btn-history-action {
   font-size: 1.05rem; padding: 0 10px; background: var(--card);
   min-width: var(--tap);
@@ -361,4 +358,5 @@ button:focus-visible, [role="button"]:focus-visible {
 
 /* === Výsledkový panel (konec hry) === */
 .result-panel { gap: 14px; }
-.result-headline { font-size: 1.3rem; font-weight: 700; text-align: center; }
+/* Společný nadpis pravého panelu: „N. kolo" při hraní i „Stupně vítězů" po konci */
+.panel-title { font-size: 1.3rem; font-weight: 700; text-align: center; }

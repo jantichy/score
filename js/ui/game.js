@@ -46,7 +46,7 @@
   function halvedSuffix(playerId, roundIndex, totalEvents) {
     for (const ev of totalEvents) {
       if (ev.roundIndex === roundIndex && ev.playerId === playerId && ev.type === "halved") {
-        return el("span", { class: "cell-adjust", title: "Přesně 100 → 50" }, "-50");
+        return el("span", { class: "cell-adjust", title: "Přesně 100 → 50" }, "−50");
       }
     }
     return null;
@@ -75,9 +75,12 @@
         if (!round) return el("td", { class: isNextCell ? "next-cell" : null });
         const value = round.scores[pid];
         const flags = flagCell(pid, round.roundIndex, round.flags, state.totalEvents);
-        // rozpis od pluginu ("2+10", "+50", "800-600") má přednost před sečteným číslem
+        // rozpis od pluginu ("2+10", "+50", "800-600") má přednost před sečteným
+        // číslem; fmtScore převádí spojovníky na typografický minus U+2212
         const displayText = round.display && round.display[pid];
-        const valueText = displayText || (value === undefined ? "" : String(value));
+        const valueText = value === undefined && !displayText
+          ? ""
+          : g.Score.dom.fmtScore(displayText || value);
         const halved = halvedSuffix(pid, round.roundIndex, state.totalEvents);
         const isNeg = typeof value === "number" && value < 0;
         const cls = [isNeg ? "neg" : null, isNextCell ? "next-cell" : null].filter(Boolean).join(" ") || null;
@@ -140,7 +143,7 @@
           class: barCls,
           style: "top:" + barTop.toFixed(1) + "px;height:" + barH.toFixed(1) + "px",
         })));
-      totalCells.push(el("span", { class: totalCls }, String(v)));
+      totalCells.push(el("span", { class: totalCls }, g.Score.dom.fmtScore(v)));
     }
 
     const overlays = [];
@@ -411,7 +414,7 @@
 
   function renderResultPanel(game, def, result, canFix, rerender, busyRef) {
     const ranking = result.ranking;
-    const headline = el("p", { class: "result-headline" }, "Stupně vítězů");
+    const headline = el("p", { class: "panel-title" }, "Stupně vítězů");
 
     // Finální pořadí: hráči pod sebou s medailemi/odznaky (viz rankingBadges);
     // pozadí řádků zlaté/stříbrné/bronzové pro medailisty, nevýrazně šedé
@@ -424,7 +427,7 @@
       return el("div", { class: cls },
         el("span", { class: "rank-pos" }, b.icon || labels[r.rank]),
         el("span", { class: "rank-name" }, r.name),
-        el("span", { class: "rank-total" }, String(r.total)));
+        el("span", { class: "rank-total" }, g.Score.dom.fmtScore(r.total)));
     });
 
     const children = [headline, el("div", { class: "final-ranking" }, ...rows)];
@@ -641,7 +644,7 @@
     }
 
     const panel = el("aside", { class: "input-panel" },
-      el("h2", null, (roundIndex + 1) + ". kolo"),
+      el("h2", { class: "panel-title" }, (roundIndex + 1) + ". kolo"),
       ...playerRows,
       panelError,
       confirmBtn,

@@ -57,6 +57,12 @@
       nav.length ? el("nav", { class: "top-nav" }, ...nav) : null);
   }
 
+  // Typografický zápis čísel/rozpisů bodů: ASCII spojovník z dat (String(-600),
+  // display rozpisy pluginů) se pro zobrazení nahrazuje skutečným minusem U+2212.
+  function fmtScore(value) {
+    return String(value).replace(/-/g, "−");
+  }
+
   g.Score = g.Score || {};
-  g.Score.dom = { el, clear, pressable, pageHeader };
+  g.Score.dom = { el, clear, pressable, pageHeader, fmtScore };
 })(globalThis);
