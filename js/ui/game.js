@@ -531,6 +531,10 @@
 
   const gameScreen = {
     async render(container, { gameId }) {
+      // idempotentní vyčištění: App.show čistí kontejner před prvním renderem, ale interní
+      // rerender() (po zápisu kola/tahu, undo, opravě dohrané hry) volá gameScreen.render
+      // přímo bez App.show mezikroku — bez clear() by se celý screen jen přidával vedle starého.
+      domClear(container);
       const game = await g.Score.DB.getGame(gameId);
       if (!game) {
         container.textContent = "Hra nenalezena.";
