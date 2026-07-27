@@ -152,10 +152,10 @@
         if (next[pid] === 100 && !memo.halved[pid]) {
           next[pid] = 50;
           memo.halved[pid] = true;
-          // adjust/title/icon čte tabulka: buňka vypíše "…−50" a 🍀 (oživení)
+          // adjust/title/icon čte tabulka: buňka vypíše "…−50" a ❤️ (oživení)
           events.push({
             playerId: pid, type: "halved", adjust: -50,
-            title: "Přesně 100 → 50", icon: "🍀",
+            title: "Přesně 100 → 50", icon: "❤️",
           });
         }
       }

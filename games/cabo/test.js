@@ -80,7 +80,7 @@ test("první přesná 100 → 50, hra pokračuje", () => {
   assert.strictEqual(st.finished, false);
   assert.deepStrictEqual(st.totalEvents, [{
     roundIndex: 1, playerId: "p1", type: "halved",
-    adjust: -50, title: "Přesně 100 → 50", icon: "🍀",
+    adjust: -50, title: "Přesně 100 → 50", icon: "❤️",
   }]);
 });
 

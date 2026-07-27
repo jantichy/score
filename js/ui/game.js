@@ -18,7 +18,7 @@
 
   // Událost nad součty s polem adjust (např. půlení 100 → 50 u KABA) se
   // v buňce vypisuje explicitně za hodnotou ("5−50"); popisek nese ev.title,
-  // volitelná ev.icon se přidá za rozpis (KABO: 🍀 jako signál oživení).
+  // volitelná ev.icon se přidá za rozpis (KABO: ❤️ jako signál oživení).
   function adjustSuffix(playerId, roundIndex, totalEvents) {
     for (const ev of totalEvents) {
       if (ev.roundIndex === roundIndex && ev.playerId === playerId &&
@@ -157,7 +157,7 @@
 
   // Odznaky finálního pořadí: hry s plnohodnotným pořadím (def.rankingStyle
   // "podium") dostanou 🥇🥈🥉 pro první tři NEvybouchlé; „vybouchlí" (přes
-  // hranici u avoid her, nebo v mínusu) vypadávají a nesou 🧨. Hry rozlišující
+  // hranici u avoid her, nebo v mínusu) vypadávají a nesou 💥. Hry rozlišující
   // jen vítěze (def.rankingStyle "winnerOnly" — závod Pirátů k cíli) mají 🏆.
   const MEDALS = ["🥇", "🥈", "🥉"];
   function rankingBadges(def, game, ranking) {
