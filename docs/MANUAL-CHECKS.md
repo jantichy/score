@@ -40,3 +40,6 @@ provést ručně v reálném prohlížeči, ideálně na skutečném zařízení
 - [ ] **Aktualizace appky**: udělat libovolnou kosmetickou změnu v JS/CSS,
       reload stránky — stará rozehraná data v IndexedDB zůstanou čitelná
       (dopředná kompatibilita schématu).
+- [ ] **Drag & drop hráčů na dotyku**: na tabletu/mobilu při zakládání hry
+      chytit box se jménem prstem za úchyt ⠿ a přetáhnout na jinou pozici —
+      pořadí se přeskládá (stejně jako myší na desktopu).

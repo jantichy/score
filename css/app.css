@@ -255,8 +255,11 @@ button:focus-visible, [role="button"]:focus-visible {
 }
 .starter-badge { font-weight: 400; color: var(--muted); font-size: 0.85em; }
 .score-input {
-  width: 5em; min-height: var(--tap); padding: 8px 10px;
-  border: 1px solid var(--line); border-radius: 6px; font-size: 1rem; text-align: right;
+  width: 6em; min-height: 52px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: 6px; font-size: 1.15rem; text-align: right;
+}
+.score-input:focus-visible {
+  outline: 2px solid var(--accent, var(--fg)); outline-offset: 1px;
 }
 .score-input:disabled { background: #f0efe9; color: var(--muted); }
 .btn-special { font-size: 0.9rem; padding: 0 10px; background: var(--card); }
@@ -286,7 +289,7 @@ button:focus-visible, [role="button"]:focus-visible {
   background: #fff3cd; border: 1px solid #f0c419; border-radius: 6px;
   padding: 8px 10px; font-weight: 600; color: #7a5c00;
 }
-.score-input-wide { width: 8em; font-size: 1.2rem; }
+.score-input-wide { width: 8em; min-height: 56px; font-size: 1.3rem; }
 .btn-quick { min-width: var(--tap); font-size: 0.9rem; padding: 0 10px; }
 .special-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .special-area { display: flex; flex-direction: column; gap: 10px; }
@@ -326,7 +329,10 @@ button:focus-visible, [role="button"]:focus-visible {
 }
 .history-result { margin-top: 2px; font-weight: 600; }
 .history-actions { display: flex; gap: 8px; flex-shrink: 0; }
-.btn-history-action { font-size: 0.9rem; padding: 0 10px; background: var(--card); }
+.btn-history-action {
+  font-size: 1.05rem; padding: 0 10px; background: var(--card);
+  min-width: var(--tap);
+}
 .btn-history-delete:hover:not(:disabled) { border-color: var(--lost); color: var(--lost); }
 .history-empty { color: var(--muted); margin-top: 8px; }
 

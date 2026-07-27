@@ -101,6 +101,8 @@
     // Hranice pro scoreboard: cílové skóre se dobývá (kind "reach") — UI ji
     // kreslí jako metu a sloupec hráče nad ní dostává vítěznou barvu.
     scoreScale(ctx) { return { max: ctx.variants.targetScore, kind: "reach" }; },
+    // Závod k cíli: smysl má jen vítěz (kdo první dosáhl cíle) → 🏆 bez medailí.
+    rankingStyle: "winnerOnly",
     variants: [
       {
         id: "targetScore",

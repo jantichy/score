@@ -144,22 +144,25 @@
       el("div", { class: "sb-row" }, ...totalCells));
   }
 
-  // Dohraná hra: místo grafu finální pořadí — hráči pod sebou, vítěz(ové) zeleně,
-  // „vybouchlí" (přes hranici u avoid her, nebo v mínusu) červeně.
-  function renderFinalRanking(game, def, ranking) {
+  // Odznaky finálního pořadí: hry s plnohodnotným pořadím (def.rankingStyle
+  // "podium") dostanou 🥇🥈🥉 pro první tři NEvybouchlé; „vybouchlí" (přes
+  // hranici u avoid her, nebo v mínusu) vypadávají a nesou 🧨. Hry rozlišující
+  // jen vítěze (def.rankingStyle "winnerOnly" — závod Pirátů k cíli) mají 🏆.
+  const MEDALS = ["🥇", "🥈", "🥉"];
+  function rankingBadges(def, game, ranking) {
     const scale = scoreScaleOf(game, def);
-    const labels = rankLabels(ranking);
-    const rows = ranking.map((r) => {
-      let cls = "rank-row";
-      if (r.rank === 1) cls += " rank-win";
-      else if ((scale && scale.kind === "avoid" && r.total >= scale.max) || r.total < 0)
-        cls += " rank-lost";
-      return el("div", { class: cls },
-        el("span", { class: "rank-pos" }, labels[r.rank]),
-        el("span", { class: "rank-name" }, r.name),
-        el("span", { class: "rank-total" }, String(r.total)));
-    });
-    return el("section", { class: "scoreboard final-ranking" }, ...rows);
+    const style = def.rankingStyle || "podium";
+    const out = {};
+    for (const r of ranking) {
+      const busted = (scale && scale.kind === "avoid" && r.total >= scale.max) || r.total < 0;
+      if (busted) { out[r.playerId] = { icon: "🧨", busted: true }; continue; }
+      if (style === "winnerOnly") {
+        out[r.playerId] = { icon: r.rank === 1 ? "🏆" : null, busted: false };
+      } else {
+        out[r.playerId] = { icon: r.rank <= 3 ? MEDALS[r.rank - 1] : null, busted: false };
+      }
+    }
+    return out;
   }
 
   // Zjišťuje z pravidel hry (ne ze seznamu slugů natvrdo), jestli je záporná hodnota
@@ -352,8 +355,11 @@
     ];
     if (next.note) bannerChildren.push(el("p", { class: "turn-note" }, next.note));
 
+    const banner = el("div", { class: "turn-banner" }, ...bannerChildren);
+    banner.addEventListener("click", () => { if (!input.disabled) input.focus(); });
+
     const panel = el("aside", { class: "input-panel" },
-      el("div", { class: "turn-banner" }, ...bannerChildren),
+      banner,
       el("div", { class: "input-controls" }, input, signBtn, ...quickBtns),
       errorEl,
       confirmBtn,
@@ -397,9 +403,22 @@
       ? el("p", { class: "result-headline" }, "Remíza: " + joinNames(winnerNames))
       : el("p", { class: "result-headline" }, "🏆 " + winnerNames[0]);
 
-    // Finální pořadí se vypisuje ve scoreboard sekci nad tabulkou (renderFinalRanking),
-    // panel nese jen vyhlášení vítěze a případnou opravu posledního zápisu.
-    const children = [headline];
+    // Finální pořadí: hráči pod sebou s medailemi/odznaky (viz rankingBadges);
+    // vítězné řádky zeleně, vybouchlí červeně s 🧨.
+    const labels = rankLabels(ranking);
+    const badges = rankingBadges(def, game, ranking);
+    const rows = ranking.map((r) => {
+      const b = badges[r.playerId];
+      let cls = "rank-row";
+      if (b.busted) cls += " rank-lost";
+      else if (r.rank === 1) cls += " rank-win";
+      return el("div", { class: cls },
+        el("span", { class: "rank-pos" }, b.icon || labels[r.rank]),
+        el("span", { class: "rank-name" }, r.name),
+        el("span", { class: "rank-total" }, String(r.total)));
+    });
+
+    const children = [headline, el("div", { class: "final-ranking" }, ...rows)];
 
     if (canFix) {
       const fixBtn = el("button", {
@@ -483,6 +502,7 @@
           onclick: () => {
             caboState.playerId = caboState.playerId === p.id ? null : p.id;
             refreshToggleStates();
+            if (!input.disabled) input.focus();
           },
         }, "📢 Kabo");
         controls.push(caboBtn);
@@ -498,6 +518,7 @@
             specialState.moveId = isActive ? null : move.id;
             setNumericInputsDisabled();
             refreshToggleStates();
+            if (!input.disabled) input.focus();
           },
         }, (move.icon ? move.icon + " " : "") + move.label);
         btn._pid = p.id;
@@ -505,11 +526,19 @@
         controls.push(btn);
       }
 
-      return el("div", { class: "input-row" },
+      // Klik kamkoli do oblasti řádku hráče (jméno, volné místo) přesune focus
+      // do jeho číselného pole — na input se tak není potřeba trefovat přesně.
+      // Kliky na tlačítka/input samotný se nechávají být (mají vlastní chování).
+      const row = el("div", { class: "input-row" },
         el("span", { class: "input-player-name" },
           p.name, showStarter ? el("span", { class: "starter-badge" }, " začíná") : null),
         el("div", { class: "input-controls" }, ...controls),
         errorEl);
+      row.addEventListener("click", (ev) => {
+        if (ev.target.closest("button") || ev.target === input) return;
+        if (!input.disabled) input.focus();
+      });
+      return row;
     });
 
     function refreshToggleStates() {
@@ -531,6 +560,7 @@
       type: "button", class: "btn-action", style: "--accent:" + def.accentColor,
       onclick: onConfirm,
     }, "Zapsat kolo");
+    const panelError = el("p", { class: "field-error" });
 
     async function onConfirm() {
       // re-entrancy guard: brání dvojímu zápisu kola při dvojkliku (viz undo handler v render())
@@ -541,8 +571,16 @@
       if (undoBtn) undoBtn.disabled = true;
       try {
         for (const pid of Object.keys(errorEls)) errorEls[pid].textContent = "";
+        panelError.textContent = "";
 
         const specialActive = !!specialState.playerId;
+
+        // CABO: běžné kolo končí voláním „Kabo!" — bez označeného volajícího
+        // kolo nejde zapsat (kamikaze kolo volajícího nevyžaduje).
+        if (hasCaboFlag && !specialActive && !caboState.playerId) {
+          panelError.textContent = "Označ hráče, který zahlásil Kabo.";
+          return;
+        }
         const records = [];
         let firstErrorInput = null;
 
@@ -596,6 +634,7 @@
     const panel = el("aside", { class: "input-panel" },
       el("h2", null, (roundIndex + 1) + ". kolo"),
       ...playerRows,
+      panelError,
       confirmBtn,
       undoBtn);
 
@@ -682,14 +721,15 @@
           ranking: game.frozenResult.ranking,
         }
         : state;
-      const table = renderTable(tableState, game, def);
+      // Tabulka kol se vůbec nekreslí, dokud není zapsané ani jedno kolo
+      // (ani prázdné záhlaví) — do té doby stačí prázdný graf.
+      const table = tableState.rounds.length > 0
+        ? renderTable(tableState, game, def)
+        : null;
 
-      // Sekce nad tabulkou: u rozehrané hry sloupcový graf součtů (bez pořadí),
-      // u dohrané finální pořadí s barevným odlišením vítěze a „vybouchlých".
-      const scoreboard = isFinished
-        ? renderFinalRanking(game, def,
-            wasFinished ? game.frozenResult.ranking : state.ranking)
-        : renderScoreboard(game, def, tableState);
+      // Levý sloupec vypadá u rozehrané i dohrané hry stejně: nahoře graf
+      // součtů, pod ním tabulka kol. Finální pořadí ukazuje pravý panel.
+      const scoreboard = renderScoreboard(game, def, tableState);
 
       const panel = isFinished
         ? renderResultPanel(game, def, wasFinished ? game.frozenResult : state, !wasFinished, rerender, busyRef)
@@ -705,4 +745,5 @@
 
   g.Score.UI = g.Score.UI || {};
   g.Score.UI.game = gameScreen;
+  g.Score.UI.rankingBadges = rankingBadges;
 })(globalThis);

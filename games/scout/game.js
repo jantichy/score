@@ -10,6 +10,8 @@
     playerRange: { min: 2, max: 5 },
     endType: "fixedRounds",
     winnerDirection: "max",
+    // Plnohodnotné pořadí dle součtu bodů → medaile 🥇🥈🥉.
+    rankingStyle: "podium",
     inputModel: "allPlayersAtOnce",
     variants: [],
     specialMoves: [],

@@ -112,7 +112,13 @@
       const lastVariantsAll = (await g.Score.DB.getMeta("lastVariants")) || {};
       const initialVariants = g.Score.Games.mergeVariants(def, lastVariantsAll[gameTypeId]);
 
-      let names = Array.from({ length: def.playerRange.min }, () => "");
+      // Předvyplnění hráčů (počet, jména i pořadí) z naposledy hrané hry
+      // stejného typu; bez předchozí hry prázdná pole v minimálním počtu.
+      const games = await g.Score.DB.allGames();
+      const lastGame = g.Score.UI.lastGameOf(games, gameTypeId);
+      let names = lastGame
+        ? [...lastGame.players].sort((a, b) => a.order - b.order).map((p) => p.name)
+        : Array.from({ length: def.playerRange.min }, () => "");
       let dragIndex = null;
       const playersError = el("p", { class: "field-error" });
 
@@ -140,36 +146,48 @@
           }, "⠿");
           const chip = el("div", { class: "player-chip" }, handle, nameInput, removeBtn);
 
-          // Drag & drop pořadí: chip je přetahovatelný jen při uchopení za úchyt,
-          // aby se nerozbíjel výběr textu v inputu. (HTML5 DnD — na dotykových
-          // zařízeních se pořadí řeší smazáním a přidáním hráče znovu.)
-          handle.addEventListener("mousedown", () => { chip.draggable = true; });
-          chip.addEventListener("dragend", () => {
-            chip.draggable = false;
-            chip.classList.remove("dragging");
-            dragIndex = null;
-          });
-          chip.addEventListener("dragstart", (ev) => {
+          // Drag & drop pořadí přes Pointer Events — jednotně myš i dotyk
+          // (prst na úchytu ⠿ chip „chytne" a táhne; touch-action: none na
+          // úchytu brání scrollování stránky během tažení).
+          function chipUnderPointer(ev) {
+            const hit = document.elementFromPoint(ev.clientX, ev.clientY);
+            return hit ? hit.closest(".player-chip") : null;
+          }
+          function clearDragMarks() {
+            for (const c of playersList.querySelectorAll(".player-chip")) {
+              c.classList.remove("dragging", "drop-target");
+            }
+          }
+          handle.addEventListener("pointerdown", (ev) => {
+            ev.preventDefault();
             dragIndex = i;
             chip.classList.add("dragging");
-            ev.dataTransfer.effectAllowed = "move";
-            try { ev.dataTransfer.setData("text/plain", String(i)); } catch (e) { /* IE/staré API */ }
+            handle.setPointerCapture(ev.pointerId);
           });
-          chip.addEventListener("dragover", (ev) => {
+          handle.addEventListener("pointermove", (ev) => {
             if (dragIndex === null) return;
-            ev.preventDefault();
-            ev.dataTransfer.dropEffect = "move";
-            chip.classList.toggle("drop-target", dragIndex !== i);
+            const target = chipUnderPointer(ev);
+            for (const c of playersList.querySelectorAll(".player-chip")) {
+              c.classList.toggle("drop-target", c === target && c !== chip);
+            }
           });
-          chip.addEventListener("dragleave", () => chip.classList.remove("drop-target"));
-          chip.addEventListener("drop", (ev) => {
-            ev.preventDefault();
-            chip.classList.remove("drop-target");
-            if (dragIndex === null || dragIndex === i) return;
-            const [moved] = names.splice(dragIndex, 1);
-            names.splice(i, 0, moved);
+          handle.addEventListener("pointerup", (ev) => {
+            if (dragIndex === null) return;
+            const target = chipUnderPointer(ev);
+            const chips = [...playersList.querySelectorAll(".player-chip")];
+            const targetIdx = target ? chips.indexOf(target) : -1;
+            const fromIdx = dragIndex;
             dragIndex = null;
-            renderPlayers();
+            clearDragMarks();
+            if (targetIdx >= 0 && targetIdx !== fromIdx) {
+              const [moved] = names.splice(fromIdx, 1);
+              names.splice(targetIdx, 0, moved);
+              renderPlayers();
+            }
+          });
+          handle.addEventListener("pointercancel", () => {
+            dragIndex = null;
+            clearDragMarks();
           });
 
           playersList.append(chip);
