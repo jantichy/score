@@ -23,9 +23,8 @@
   }
 
   function dateText(ts) {
-    return new Date(ts).toLocaleString("cs-CZ", {
+    return new Date(ts).toLocaleDateString("cs-CZ", {
       day: "numeric", month: "numeric", year: "numeric",
-      hour: "2-digit", minute: "2-digit",
     });
   }
 
@@ -67,7 +66,7 @@
       }, "🗑");
 
       // Jeden řádek: [hráči / pořadí s medailemi] [label — jen když je]
-      // [datum a čas] [✏️] [🗑]. Label vyplňuje střed (flex: 1), takže datum
+      // [datum] [✏️] [🗑]. Label vyplňuje střed (flex: 1), takže datum
       // a tlačítka drží vpravo i bez něj.
       return g.Score.dom.pressable(el("div", {
         class: "history-item", role: "button",

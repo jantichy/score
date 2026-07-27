@@ -13,8 +13,6 @@
       for (const id of order) {
         if (id !== rec.playerId) totals[id] -= penalty;
       }
-    } else if (rec.special === "shipFail") {
-      totals[rec.playerId] -= rec.flags.penalty;
     } else {
       totals[rec.playerId] += rec.value;
     }
@@ -108,8 +106,6 @@
     // Ikony a tooltipy vlajek v tabulce.
     flagMeta: {
       skullIsland: { icon: "☠️", title: "Ostrov lebek" },
-      skullVictim: { icon: "☠️➖", title: "Ostrov lebek — oběť" },
-      shipFail: { icon: "⚓", title: "Pirátská loď — neúspěch" },
     },
     variants: [
       {
@@ -147,12 +143,6 @@
           { id: "pirateCard", label: "Karta Pirát (×2)", type: "bool" },
         ],
       },
-      {
-        id: "shipFail", label: "Pirátská loď — neúspěch", icon: "🚢",
-        params: [
-          { id: "penalty", label: "Penalizace z karty", type: "number", step: 100 },
-        ],
-      },
     ],
     // Jediný zdroj bodovací pravdy: stejná applyRecord, kterou používá replay()
     // pro detekci konce hry, se tu skládá nad nulovými součty jednoho kola.
@@ -161,7 +151,6 @@
       const order = ctx.players.map((p) => p.id);
       const scores = Object.fromEntries(order.map((id) => [id, 0]));
       const flags = {};
-      const skullVictimFlagged = {};
       // Skóre kola smí dostat jen hráč, kterého se kolo zatím týká (vlastní záznam,
       // nebo oběť Ostrova lebek) — jinak by tabulka ukazovala „0" i hráčům, kteří
       // v sekvenčním modelu na svůj tah teprve čekají.
@@ -173,10 +162,8 @@
       for (const rec of records) {
         applyRecord(scores, rec, order);
         touched.add(rec.playerId);
-        if (rec.special === "shipFail") {
-          addFlag(flags, rec.playerId, "shipFail");
-          parts[rec.playerId].push(-rec.flags.penalty);
-        } else if (rec.special === "skullIsland") {
+        if (rec.special === "skullIsland") {
+          // Ikonu ☠️ dostává jen pachatel; oběti poznají penalizaci z rozpisu buňky.
           addFlag(flags, rec.playerId, "skullIsland");
           parts[rec.playerId].push(0);
           const per = 100 * rec.flags.skulls * (rec.flags.pirateCard ? 2 : 1);
@@ -184,10 +171,6 @@
             if (player.id === rec.playerId) continue;
             touched.add(player.id);
             parts[player.id].push(-per);
-            if (!skullVictimFlagged[player.id]) {
-              addFlag(flags, player.id, "skullVictim");
-              skullVictimFlagged[player.id] = true;
-            }
           }
         } else {
           parts[rec.playerId].push(rec.value);

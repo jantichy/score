@@ -20,7 +20,6 @@ function entry(game, patch) {
 const turn = (g, value) => entry(g, { value });
 const skullIsland = (g, skulls, pirateCard) =>
   entry(g, { special: "skullIsland", flags: { skulls, pirateCard: !!pirateCard } });
-const shipFail = (g, penalty) => entry(g, { special: "shipFail", flags: { penalty } });
 
 test("střídání hráčů v pořadí, roundIndex per hráč", () => {
   const g = makeGame();
@@ -38,7 +37,7 @@ test("ostrov lebek: pachatel 0, ostatní −100×N", () => {
   const st = Engine.derive(g, def);
   assert.deepStrictEqual(st.totals, { p1: -300, p2: -400, p3: 0 });
   assert.ok(st.rounds[0].flags.p3.includes("skullIsland"));
-  assert.ok(st.rounds[0].flags.p1.includes("skullVictim"));
+  assert.strictEqual(st.rounds[0].flags.p1, undefined); // oběti ikonu nedostávají
 });
 
 test("ostrov lebek s kartou Pirát: −200×N", () => {
@@ -54,12 +53,6 @@ test("dva ostrovy lebek ve stejném roundIndex se kumulují", () => {
   turn(g, 0);                         // p3
   const st = Engine.derive(g, def);
   assert.deepStrictEqual(st.totals, { p1: -300, p2: -500, p3: -800 });
-});
-
-test("pirátská loď — neúspěch: −penalizace", () => {
-  const g = makeGame();
-  turn(g, 0); shipFail(g, 500);       // p2
-  assert.strictEqual(Engine.derive(g, def).totals.p2, -500);
 });
 
 test("dosažení cíle spustí rozhodující kolo pro ostatní", () => {

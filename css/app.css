@@ -318,8 +318,14 @@ button:focus-visible, [role="button"]:focus-visible {
 }
 .score-input-wide { width: 8em; min-height: 56px; font-size: 1.3rem; }
 .btn-quick { min-width: var(--tap); font-size: 0.9rem; padding: 0 10px; }
-.special-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Přepínač režimu zápisu (Běžná hra / speciální tah) — segmentovaná tlačítka,
+   zmáčknuté dostává akcentovou barvu hry. Formuláře režimů se schovávají
+   přes [hidden], které musí přebít jejich display: flex. */
+.mode-toggle { display: flex; flex-wrap: wrap; gap: 8px; }
+.mode-toggle .btn-special { flex: 1; white-space: nowrap; }
+.mode-form { display: flex; flex-direction: column; gap: 12px; }
 .special-area { display: flex; flex-direction: column; gap: 10px; }
+.mode-form[hidden], .special-area[hidden] { display: none; }
 .param-row {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   min-height: var(--tap); cursor: pointer;

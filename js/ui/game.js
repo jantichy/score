@@ -209,7 +209,6 @@
     const specialMoves = def.specialMoves || [];
     const allowsNegative = allowsNegativeInput(def);
 
-    const specialState = { moveId: null };
     const paramInputs = {}; // paramId -> input element (pro aktivní speciál)
     const errorEl = el("p", { class: "field-error" });
     const specialErrorEl = el("p", { class: "field-error" });
@@ -238,12 +237,15 @@
 
     const specialArea = el("div", { class: "special-area" });
 
-    function setNormalDisabled(disabled) {
-      input.disabled = disabled;
-      confirmBtn.disabled = disabled;
-      if (signBtn) signBtn.disabled = disabled;
-      for (const btn of quickBtns) btn.disabled = disabled;
-    }
+    // Režimy zápisu se přepínají celé (hidden) — viditelný je vždy jen
+    // formulář aktivního režimu, nic se nedisabluje.
+    const normalForm = el("div", { class: "mode-form" },
+      el("div", { class: "input-controls" }, input),
+      (signBtn || quickBtns.length)
+        ? el("div", { class: "input-controls" }, signBtn, ...quickBtns)
+        : null,
+      errorEl,
+      confirmBtn);
 
     async function onConfirmTurn() {
       if (busyRef.value) return;
@@ -294,20 +296,11 @@
       });
 
       const submitBtn = el("button", {
-        type: "button", class: "btn-action",
+        type: "button", class: "btn-action", style: "--accent:" + def.accentColor,
         onclick: () => onConfirmSpecial(move),
       }, "Zapsat: " + move.label);
-      const cancelBtn = el("button", {
-        type: "button", class: "btn-back",
-        onclick: () => {
-          specialState.moveId = null;
-          setNormalDisabled(false);
-          renderSpecialForm(null);
-          refreshMoveButtons();
-        },
-      }, "Zrušit");
 
-      specialArea.append(...rows, specialErrorEl, submitBtn, cancelBtn);
+      specialArea.append(...rows, specialErrorEl, submitBtn);
     }
 
     async function onConfirmSpecial(move) {
@@ -351,22 +344,29 @@
       }
     }
 
-    const moveButtons = specialMoves.map((move) => el("button", {
-      type: "button", class: "btn-special btn-move-" + move.id,
-      onclick: () => {
-        specialState.moveId = specialState.moveId === move.id ? null : move.id;
-        setNormalDisabled(!!specialState.moveId);
-        if (specialState.moveId) renderSpecialForm(move);
-        else renderSpecialForm(null);
-        refreshMoveButtons();
-      },
-    }, (move.icon ? move.icon + " " : "") + move.label));
+    // Přepínač režimu nahoře: „Běžná hra" + jeden režim za každý speciální
+    // tah hry (Piráti: Ostrov lebek). Zmáčknutý režim určuje, který formulář
+    // je vykreslený — ten druhý je úplně schovaný.
+    const modes = [{ id: null, label: "Běžná hra", move: null }].concat(
+      specialMoves.map((move) => ({
+        id: move.id, label: (move.icon ? move.icon + " " : "") + move.label, move,
+      })));
+    const modeBtns = modes.map((mode) => el("button", {
+      type: "button", class: "btn-special",
+      onclick: () => { setMode(mode.id); if (!mode.id) input.focus(); },
+    }, mode.label));
+    const modeToggle = el("div", {
+      class: "mode-toggle", style: "--accent:" + def.accentColor,
+    }, ...modeBtns);
 
-    function refreshMoveButtons() {
-      moveButtons.forEach((btn, i) => {
-        btn.classList.toggle("active", specialMoves[i].id === specialState.moveId);
-      });
+    function setMode(moveId) {
+      const mode = modes.find((m) => m.id === moveId);
+      renderSpecialForm(mode ? mode.move : null);
+      normalForm.hidden = !!moveId;
+      specialArea.hidden = !moveId;
+      modeBtns.forEach((btn, i) => btn.classList.toggle("active", modes[i].id === moveId));
     }
+    setMode(null);
 
     // Předvyplnění vráceného tahu (viz rerender({prefill}) u undo/opravy):
     // po undo je na tahu tentýž hráč — obnoví se hodnota, nebo otevřený
@@ -376,10 +376,7 @@
       if (rec.special) {
         const move = specialMoves.find((m) => m.id === rec.special);
         if (move) {
-          specialState.moveId = move.id;
-          setNormalDisabled(true);
-          renderSpecialForm(move);
-          refreshMoveButtons();
+          setMode(move.id);
           for (const param of move.params || []) {
             const entry = paramInputs[param.id];
             if (!entry) continue;
@@ -398,18 +395,16 @@
     if (next.note) bannerChildren.push(el("p", { class: "turn-note" }, next.note));
 
     const banner = el("div", { class: "turn-banner" }, ...bannerChildren);
-    banner.addEventListener("click", () => { if (!input.disabled) input.focus(); });
+    banner.addEventListener("click", () => { if (!normalForm.hidden) input.focus(); });
 
     const panel = el("aside", { class: "input-panel" },
       banner,
-      el("div", { class: "input-controls" }, input, signBtn, ...quickBtns),
-      errorEl,
-      confirmBtn,
-      moveButtons.length ? el("div", { class: "special-buttons" }, ...moveButtons) : null,
+      specialMoves.length ? modeToggle : null,
+      normalForm,
       specialArea,
       undoBtn);
 
-    setTimeout(() => { if (!input.disabled) input.focus(); }, 0);
+    setTimeout(() => { if (!normalForm.hidden) input.focus(); }, 0);
 
     return panel;
   }
