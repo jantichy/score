@@ -8,7 +8,7 @@
 
   g.Score.Games.register({
     id: "cabo",
-    name: "KABO",
+    name: "Kabo",
     rulesVersion: 1,
     accentColor: "#c0392b",
     icon: "🃏",

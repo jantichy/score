@@ -3,7 +3,7 @@
 
   g.Score.Games.register({
     id: "scout",
-    name: "SCOUT",
+    name: "Scout",
     rulesVersion: 1,
     accentColor: "#8e5c9e",
     icon: "🎪",

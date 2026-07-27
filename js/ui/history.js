@@ -2,11 +2,15 @@
   "use strict";
   const el = g.Score.dom.el;
 
-  // Úvod řádku historie: u nedohrané hry seznam hráčů, u dohrané celé pořadí
-  // s medailemi/odznaky a body (např. "🥇 Marky 52 · 💥 Honza 107").
+  // Úvod řádku historie: u nedohrané hry hráči s průběžnými body (v pořadí
+  // u stolu), u dohrané celé pořadí s medailemi/odznaky a body
+  // (např. "🥇 Marky 52 · 💥 Honza 107").
   function leadText(def, game) {
     if (game.status !== "finished" || !game.frozenResult) {
-      return game.players.map((p) => p.name).join(", ");
+      const totals = g.Score.Engine.derive(game, def).totals;
+      return game.players
+        .map((p) => p.name + " " + g.Score.dom.fmtScore(totals[p.id] ?? 0))
+        .join(" · ");
     }
     const r = game.frozenResult;
     const badges = g.Score.UI.rankingBadges(def, game, r.ranking);

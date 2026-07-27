@@ -348,10 +348,11 @@ button:focus-visible, [role="button"]:focus-visible {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
   border-color: var(--accent, var(--fg));
 }
-.history-lead { font-weight: 600; min-width: 0; }
+/* Hráči/výsledky netučně a roztahují řádek; label tučně, přimknutý doprava k datu */
+.history-lead { font-weight: 400; flex: 1 1 0; min-width: 0; }
 .history-label {
-  flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 600; text-align: right;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .history-date { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
 .btn-history-action {
