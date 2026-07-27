@@ -46,7 +46,7 @@ score/
 
 ## Stav
 
-Fáze návrhu. Kód se zatím nepíše — zadání je v `docs/PRD.md`, implementační plán v `docs/PLAN.md`. Lokální git repozitář (větev `main`, zatím **bez remote**).
+MVP implementované na větvi `score-mvp` (jádro, IndexedDB, hry `cabo`/`pirates`/`scout`, domovská obrazovka i historie) — viz `docs/PRD.md` §8 pro checklist. Spuštění: dvojklik na `index.html` z disku. Testy: `node tests/run.js`.
 
 ## Pravidla her
 

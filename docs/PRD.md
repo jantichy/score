@@ -200,27 +200,27 @@ Plná pravidla: `rules/cabo.md`, `rules/pirates.md`, `rules/scout.md`.
 
 ## 8. MVP checklist
 
-- [ ] Kostra appky bez buildu, spustitelná z `file://`.
-- [ ] IndexedDB wrapper + schéma `games`/`meta` s dopřednou kompatibilitou.
-- [ ] Registr her (`Games.register`) + načítání modulů přes `<script>`.
-- [ ] Domovská obrazovka: dlaždice her + „Pokračovat" u hry s nedohranou poslední hrou.
-- [ ] Rozcestník hry: pokračovat v poslední (jen nedohraná) / nová hra / historie tohoto typu.
-- [ ] Zakládání hry: výběr typu, zadání hráčů s pořadím, **formulář variant pravidel** (viz 6b) předvyplněný z poslední hry téhož typu / defaultů.
-- [ ] Uložení a předvyplňování `meta.lastVariants[gameTypeId]`; merge s defaulty modulu (dopředná kompatibilita variant).
-- [ ] Render výsledkové tabulky (hráč = sloupec, kolo = řádek) + průběžné součty + pořadí.
-- [ ] Vstupní panel — model „všichni najednou".
-- [ ] Vstupní panel — model „po jednom" (výzva konkrétnímu hráči, postup dle pořadí + rotace).
-- [ ] Numerická klávesnice na mobilu; responzivní layout (2 sloupce ↔ přeskládání).
-- [ ] Undo posledního vloženého záznamu (opakovaně, zásobník).
-- [ ] Hlídání povoleného počtu hráčů dle `playerRange`.
-- [ ] Vyhodnocení remízy přes `tiebreak` (fallback sdílené pořadí).
-- [ ] Více nedohraných her současně; návrat ke kterékoli z historie daného typu (`in_progress` / `finished`).
-- [ ] Historie (per typ hry): náhled výsledků, pokračování u nedohraných, smazání (s potvrzením), přejmenování/štítek.
-- [ ] Speciální tahy jako tlačítka s efektem přes hráče.
-- [ ] Detekce konce hry (cílové skóre / počet kol) + rozhodující kolo u Pirátských kostek (vč. návratu pod hranici a auto-výhry).
-- [ ] Vizuální odlišení speciálních událostí (kamikaze, 100→50, ostrov lebek, volání CABO).
-- [ ] Archivace dohrané hry se zamrzlým snímkem + obrazovka Historie.
-- [ ] Implementace her: `cabo`, `pirates`, `scout`.
+- [x] Kostra appky bez buildu, spustitelná z `file://`.
+- [x] IndexedDB wrapper + schéma `games`/`meta` s dopřednou kompatibilitou.
+- [x] Registr her (`Games.register`) + načítání modulů přes `<script>`.
+- [x] Domovská obrazovka: dlaždice her + „Pokračovat" u hry s nedohranou poslední hrou.
+- [x] Rozcestník hry: pokračovat v poslední (jen nedohraná) / nová hra / historie tohoto typu.
+- [x] Zakládání hry: výběr typu, zadání hráčů s pořadím, **formulář variant pravidel** (viz 6b) předvyplněný z poslední hry téhož typu / defaultů.
+- [x] Uložení a předvyplňování `meta.lastVariants[gameTypeId]`; merge s defaulty modulu (dopředná kompatibilita variant).
+- [x] Render výsledkové tabulky (hráč = sloupec, kolo = řádek) + průběžné součty + pořadí.
+- [x] Vstupní panel — model „všichni najednou".
+- [x] Vstupní panel — model „po jednom" (výzva konkrétnímu hráči, postup dle pořadí + rotace).
+- [x] Numerická klávesnice na mobilu; responzivní layout (2 sloupce ↔ přeskládání).
+- [x] Undo posledního vloženého záznamu (opakovaně, zásobník).
+- [x] Hlídání povoleného počtu hráčů dle `playerRange`.
+- [x] Vyhodnocení remízy přes `tiebreak` (fallback sdílené pořadí).
+- [x] Více nedohraných her současně; návrat ke kterékoli z historie daného typu (`in_progress` / `finished`).
+- [x] Historie (per typ hry): náhled výsledků, pokračování u nedohraných, smazání (s potvrzením), přejmenování/štítek.
+- [x] Speciální tahy jako tlačítka s efektem přes hráče.
+- [x] Detekce konce hry (cílové skóre / počet kol) + rozhodující kolo u Pirátských kostek (vč. návratu pod hranici a auto-výhry).
+- [x] Vizuální odlišení speciálních událostí (kamikaze, 100→50, ostrov lebek, volání CABO).
+- [x] Archivace dohrané hry se zamrzlým snímkem + obrazovka Historie.
+- [x] Implementace her: `cabo`, `pirates`, `scout`.
 
 ## 8b. Vizuální styl a UX
 
