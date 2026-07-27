@@ -5,11 +5,13 @@
 
   // Pozn.: kamikazeVictim a halved nemají ikonu — jejich efekt se v buňce
   // vypisuje explicitně jako rozpis ("+50", "5-50"), ikona by ho zdvojovala.
+  // Tlampač 📢 je jednotný signál zahlášení Kaba na všech místech (úspěch
+  // i neúspěch — ten je stejně vidět z rozpisu penalizace "2+10").
   const FLAG_META = {
     cabo: { icon: "📢", title: "Volal Kabo" },
-    caboFail: { icon: "❗", title: "Neúspěšné Kabo (+penalizace)" },
-    caboSuccess: { icon: "✅", title: "Úspěšné Kabo" },
-    kamikaze: { icon: "🛩️", title: "Kamikaze" },
+    caboFail: { icon: "📢", title: "Neúspěšné Kabo (+penalizace)" },
+    caboSuccess: { icon: "📢", title: "Úspěšné Kabo" },
+    kamikaze: { icon: "💣", title: "Kamikaze" },
     skullIsland: { icon: "☠️", title: "Ostrov lebek" },
     skullVictim: { icon: "☠️➖", title: "Ostrov lebek — oběť" },
     shipFail: { icon: "⚓", title: "Pirátská loď — neúspěch" },

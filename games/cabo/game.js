@@ -8,7 +8,7 @@
 
   g.Score.Games.register({
     id: "cabo",
-    name: "CABO",
+    name: "KABO",
     rulesVersion: 1,
     accentColor: "#c0392b",
     icon: "🃏",
@@ -64,7 +64,7 @@
     validateInput(value) {
       return Number.isInteger(value) && value >= 0 ? null : "Zadej celé číslo ≥ 0.";
     },
-    specialMoves: [{ id: "kamikaze", label: "Kamikaze", icon: "🛩️", params: [] }],
+    specialMoves: [{ id: "kamikaze", label: "Kamikaze", icon: "💣", params: [] }],
     roundScores(records, ctx) {
       const scores = {};
       const flags = {};
