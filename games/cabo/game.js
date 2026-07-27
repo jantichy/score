@@ -16,6 +16,9 @@
     endType: "targetScore",
     winnerDirection: "min",
     inputModel: "allPlayersAtOnce",
+    // Hranice pro scoreboard: ke 100 se hráči blíží „zespodu" a překročení
+    // znamená vyřazení (kind "avoid") — UI ji kreslí jako varovnou čáru.
+    scoreScale() { return { max: 100, kind: "avoid" }; },
     variants: [
       {
         id: "caboPenalty",

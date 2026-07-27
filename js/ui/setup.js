@@ -113,9 +113,10 @@
       const initialVariants = g.Score.Games.mergeVariants(def, lastVariantsAll[gameTypeId]);
 
       let names = Array.from({ length: def.playerRange.min }, () => "");
+      let dragIndex = null;
       const playersError = el("p", { class: "field-error" });
 
-      const playersList = el("div", { class: "setup-players" });
+      const playersList = el("div", { class: "player-chips" });
       const addBtn = el("button", {
         type: "button", class: "btn-add-player",
         onclick: () => { names.push(""); renderPlayers(); },
@@ -129,31 +130,52 @@
             placeholder: "Hráč " + (i + 1), value: name,
             oninput: (e) => { names[i] = e.target.value; },
           });
-          const upBtn = el("button", {
-            type: "button", class: "btn-order",
-            disabled: i === 0 ? "disabled" : null,
-            onclick: () => {
-              [names[i - 1], names[i]] = [names[i], names[i - 1]];
-              renderPlayers();
-            },
-          }, "↑");
-          const downBtn = el("button", {
-            type: "button", class: "btn-order",
-            disabled: i === names.length - 1 ? "disabled" : null,
-            onclick: () => {
-              [names[i + 1], names[i]] = [names[i], names[i + 1]];
-              renderPlayers();
-            },
-          }, "↓");
           const removeBtn = el("button", {
-            type: "button", class: "btn-remove",
+            type: "button", class: "btn-remove", "aria-label": "Odebrat hráče",
             disabled: names.length <= def.playerRange.min ? "disabled" : null,
             onclick: () => { names.splice(i, 1); renderPlayers(); },
           }, "×");
-          playersList.append(
-            el("div", { class: "player-row" }, nameInput, upBtn, downBtn, removeBtn));
+          const handle = el("span", {
+            class: "drag-handle", title: "Přetažením změníš pořadí",
+          }, "⠿");
+          const chip = el("div", { class: "player-chip" }, handle, nameInput, removeBtn);
+
+          // Drag & drop pořadí: chip je přetahovatelný jen při uchopení za úchyt,
+          // aby se nerozbíjel výběr textu v inputu. (HTML5 DnD — na dotykových
+          // zařízeních se pořadí řeší smazáním a přidáním hráče znovu.)
+          handle.addEventListener("mousedown", () => { chip.draggable = true; });
+          chip.addEventListener("dragend", () => {
+            chip.draggable = false;
+            chip.classList.remove("dragging");
+            dragIndex = null;
+          });
+          chip.addEventListener("dragstart", (ev) => {
+            dragIndex = i;
+            chip.classList.add("dragging");
+            ev.dataTransfer.effectAllowed = "move";
+            try { ev.dataTransfer.setData("text/plain", String(i)); } catch (e) { /* IE/staré API */ }
+          });
+          chip.addEventListener("dragover", (ev) => {
+            if (dragIndex === null) return;
+            ev.preventDefault();
+            ev.dataTransfer.dropEffect = "move";
+            chip.classList.toggle("drop-target", dragIndex !== i);
+          });
+          chip.addEventListener("dragleave", () => chip.classList.remove("drop-target"));
+          chip.addEventListener("drop", (ev) => {
+            ev.preventDefault();
+            chip.classList.remove("drop-target");
+            if (dragIndex === null || dragIndex === i) return;
+            const [moved] = names.splice(dragIndex, 1);
+            names.splice(i, 0, moved);
+            dragIndex = null;
+            renderPlayers();
+          });
+
+          playersList.append(chip);
         });
         addBtn.disabled = names.length >= def.playerRange.max;
+        playersList.append(addBtn);
       }
       renderPlayers();
 
@@ -169,9 +191,9 @@
             f.errorEl)));
 
       const submitBtn = el("button", {
-        type: "button", class: "btn-action", style: "--accent:" + def.accentColor,
+        type: "button", class: "btn-start", style: "--accent:" + def.accentColor,
         onclick: onSubmit,
-      }, "Založit hru");
+      }, "Začít hru");
 
       async function onSubmit() {
         let hasError = false;
@@ -216,22 +238,15 @@
       }
 
       container.append(
-        el("h1", { style: "--accent:" + def.accentColor },
-          el("span", { class: "tile-icon" }, def.icon),
-          " " + def.name + " — nová hra"),
-        el("h2", { class: "setup-section-title" }, "Hráči"),
+        g.Score.dom.pageHeader({
+          icon: def.icon, title: def.name, accent: def.accentColor,
+          onBack: () => g.App.show("hub", { gameTypeId }),
+        }),
+        el("h2", { class: "section-title" }, "Hráči"),
         playersList,
-        addBtn,
         playersError,
-        def.variants.length > 0
-          ? el("h2", { class: "setup-section-title" }, "Varianty pravidel")
-          : null,
         variantsSection,
-        submitBtn,
-        el("button", {
-          class: "btn-back",
-          onclick: () => g.App.show("hub", { gameTypeId }),
-        }, "← Zpět"));
+        submitBtn);
     },
   };
 

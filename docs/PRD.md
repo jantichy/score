@@ -37,7 +37,7 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 - Po kliknutí na hru se otevře její **rozcestník**:
   - a) **Pokračovat v poslední hře** — jen pokud je poslední hra tohoto typu nedohraná,
   - b) **Nová hra** (viz 3.1),
-  - c) **Historie** — všechny předchozí hry tohoto typu (viz 3.5).
+  - c) **historie vypsaná přímo na rozcestníku** — všechny předchozí hry tohoto typu (viz 3.5).
 - Aplikace umožňuje mít **více nedohraných her současně** (napříč hrami i v rámci jedné hry) a vrátit se ke **kterékoli** z nich (přes historii daného typu, 3.5). Stav hry je `in_progress` nebo `finished`.
 
 ### 3.1 Nová hra
@@ -64,7 +64,7 @@ Obecná webová appka pro **zapisování a vyhodnocování bodů** ve společens
 - U Pirátských kostek zahrnuje konec i **rozhodující kolo** (ostatní dohrají poslední tah, možnost přehození, návrat pod hranici a auto-výhra — viz `games/pirates/rules.md`; „obranný hod" jen je-li zapnutá varianta `defenderReroll`).
 
 ### 3.5 Historie (v rámci konkrétní hry)
-- Z rozcestníku hry → **Historie** → seznam **všech her tohoto typu** (dohraných i nedohraných).
+- Historie je **vypsaná přímo na rozcestníku hry** — seznam **všech her tohoto typu** (dohraných i nedohraných), pod tlačítky Nová hra / Pokračovat.
 - **Řazení: chronologicky sestupně podle času posledního hraní** (`lastPlayedAt`) — naposledy hraná nahoře.
 - U **dohrané** (`finished`) hry detail zobrazí zamrzlou tabulku a výsledek (jen ke čtení).
 - U **nedohrané** (`in_progress`) hry jde z detailu **pokračovat v hraní**. Obnovení hry (i starší) aktualizuje `lastPlayedAt`, takže se **přesune nahoru** jako aktuálně hraná — a stává se tak „poslední hrou" pro zkratku Pokračovat (3.0).

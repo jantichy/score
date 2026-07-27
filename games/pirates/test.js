@@ -173,3 +173,9 @@ test("validateInput: násobky 100, zápor i nula OK", () => {
   assert.ok(typeof def.validateInput(250, {}) === "string");
   assert.ok(typeof def.validateInput(1.5, {}) === "string");
 });
+
+test("scoreScale: cílové skóre z variant, typ reach", () => {
+  assert.deepStrictEqual(def.scoreScale({ variants: { targetScore: 6000 } }),
+    { max: 6000, kind: "reach" });
+  assert.strictEqual(def.scoreScale({ variants: { targetScore: 8000 } }).max, 8000);
+});

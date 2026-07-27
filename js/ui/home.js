@@ -11,22 +11,38 @@
     return last;
   }
 
+  // Sdílená dvojice akcí hry — stejné pořadí i vzhled na dlaždici (homepage)
+  // i na rozcestníku: [Nová hra] [Pokračovat]. „Pokračovat" jen když je poslední
+  // hra daného typu rozehraná.
+  function gameActions(def, last) {
+    const buttons = [
+      el("button", {
+        type: "button", class: "btn-game-action primary",
+        onclick: (ev) => { ev.stopPropagation(); g.App.show("setup", { gameTypeId: def.id }); },
+      }, "Nová hra"),
+    ];
+    if (last && last.status === "in_progress") {
+      buttons.push(el("button", {
+        type: "button", class: "btn-game-action",
+        title: "Pokračovat v poslední rozehrané hře",
+        onclick: (ev) => { ev.stopPropagation(); g.App.show("game", { gameId: last.id }); },
+      }, "Pokračovat"));
+    }
+    return buttons;
+  }
+
   function tileFor(def, games) {
     const last = lastGameOf(games, def.id);
-    // Dlaždice je div[role=button] (ne <button>), protože uvnitř může být skutečné
-    // vnořené tlačítko „Pokračovat" — <button> uvnitř <button> je nevalidní HTML.
+    // Dlaždice je div[role=button] (ne <button>), protože uvnitř jsou skutečná
+    // vnořená tlačítka akcí — <button> uvnitř <button> je nevalidní HTML.
     return g.Score.dom.pressable(el("div", {
       class: "tile", style: "--accent:" + def.accentColor, role: "button",
       onclick: () => g.App.show("hub", { gameTypeId: def.id }),
     },
-      el("span", { class: "tile-icon" }, def.icon),
-      el("span", { class: "tile-name" }, def.name),
-      last && last.status === "in_progress"
-        ? el("button", {
-            type: "button", class: "btn-continue",
-            onclick: (ev) => { ev.stopPropagation(); g.App.show("game", { gameId: last.id }); },
-          }, "Pokračovat")
-        : null));
+      el("div", { class: "tile-head" },
+        el("span", { class: "tile-icon" }, def.icon),
+        el("span", { class: "tile-name" }, def.name)),
+      el("div", { class: "tile-buttons" }, ...gameActions(def, last))));
   }
 
   const home = {
@@ -36,7 +52,7 @@
       const grid = el("div", { class: "tile-grid" },
         ...defs.map((def) => tileFor(def, games)));
       container.append(
-        el("h1", {}, "Score"),
+        g.Score.dom.pageHeader({ title: "Score", home: true }),
         grid);
     },
   };
@@ -44,4 +60,5 @@
   g.Score.UI = g.Score.UI || {};
   g.Score.UI.home = home;
   g.Score.UI.lastGameOf = lastGameOf;
+  g.Score.UI.gameActions = gameActions;
 })(globalThis);

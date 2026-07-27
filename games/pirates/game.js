@@ -98,6 +98,9 @@
     endType: "targetScore",
     winnerDirection: "max",
     inputModel: "perPlayerSequential",
+    // Hranice pro scoreboard: cílové skóre se dobývá (kind "reach") — UI ji
+    // kreslí jako metu a sloupec hráče nad ní dostává vítěznou barvu.
+    scoreScale(ctx) { return { max: ctx.variants.targetScore, kind: "reach" }; },
     variants: [
       {
         id: "targetScore",
@@ -149,15 +152,21 @@
       const scores = Object.fromEntries(order.map((id) => [id, 0]));
       const flags = {};
       const skullVictimFlagged = {};
+      // Skóre kola smí dostat jen hráč, kterého se kolo zatím týká (vlastní záznam,
+      // nebo oběť Ostrova lebek) — jinak by tabulka ukazovala „0" i hráčům, kteří
+      // v sekvenčním modelu na svůj tah teprve čekají.
+      const touched = new Set();
 
       for (const rec of records) {
         applyRecord(scores, rec, order);
+        touched.add(rec.playerId);
         if (rec.special === "shipFail") {
           addFlag(flags, rec.playerId, "shipFail");
         } else if (rec.special === "skullIsland") {
           addFlag(flags, rec.playerId, "skullIsland");
           for (const player of ctx.players) {
             if (player.id === rec.playerId) continue;
+            touched.add(player.id);
             if (!skullVictimFlagged[player.id]) {
               addFlag(flags, player.id, "skullVictim");
               skullVictimFlagged[player.id] = true;
@@ -166,6 +175,7 @@
         }
       }
 
+      for (const id of order) if (!touched.has(id)) delete scores[id];
       return { scores, flags };
     },
     nextTurn(core, ctx) {

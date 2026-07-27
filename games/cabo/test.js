@@ -123,3 +123,7 @@ test("validateInput", () => {
   assert.ok(typeof def.validateInput(-1, {}) === "string");
   assert.ok(typeof def.validateInput(3.5, {}) === "string");
 });
+
+test("scoreScale: hranice 100, typ avoid", () => {
+  assert.deepStrictEqual(def.scoreScale({ variants: {} }), { max: 100, kind: "avoid" });
+});

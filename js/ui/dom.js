@@ -18,8 +18,8 @@
   function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
   // Klávesová dostupnost pro prvky, které nejsou nativní <button>/<a>, ale mají
-  // role="button" a onclick handler (viz home.js .btn-continue, hub.js .hub-unfinished,
-  // history.js .history-item). Přidá tabindex a Enter/mezerník = click().
+  // role="button" a onclick handler (viz home.js .tile, history.js .history-item).
+  // Přidá tabindex a Enter/mezerník = click().
   // Kontroluje e.target === node, aby se předešlo dvojímu spuštění, když je uvnitř
   // vnořené interaktivní dítě (např. tlačítka v history-item) a klávesová událost
   // probublá nahoru z jeho vlastního focusu.
@@ -35,6 +35,28 @@
     return node;
   }
 
+  // Jednotná hlavička stránky: vlevo titulek (na homepage „Score", jinde název hry
+  // s ikonou, bez dodatků), vpravo navigace — volitelné „← Zpět" a vždy „Domů"
+  // (mimo homepage). Jediné společné místo pro návrat domů napříč aplikací.
+  function pageHeader({ icon, title, accent, onBack, home }) {
+    const nav = [];
+    if (onBack) nav.push(el("button", {
+      type: "button", class: "btn-nav", onclick: onBack,
+    }, "← Zpět"));
+    if (!home) nav.push(el("button", {
+      type: "button", class: "btn-nav", onclick: () => g.App.show("home"),
+    }, "Domů"));
+    return el("header", {
+      class: "page-header",
+      style: accent ? "--accent:" + accent : null,
+    },
+      el("h1", null,
+        icon ? el("span", { class: "tile-icon" }, icon) : null,
+        icon ? " " : null,
+        title),
+      nav.length ? el("nav", { class: "top-nav" }, ...nav) : null);
+  }
+
   g.Score = g.Score || {};
-  g.Score.dom = { el, clear, pressable };
+  g.Score.dom = { el, clear, pressable, pageHeader };
 })(globalThis);

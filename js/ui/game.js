@@ -31,44 +31,6 @@
     return null;
   }
 
-  function ordinalRanking(playerIds, totals, direction) {
-    const sorted = [...playerIds].sort((a, b) =>
-      direction === "min" ? totals[a] - totals[b] : totals[b] - totals[a]);
-    const ranks = {};
-    sorted.forEach((pid, idx) => {
-      if (idx === 0) { ranks[pid] = 1; return; }
-      const prev = sorted[idx - 1];
-      ranks[pid] = totals[pid] === totals[prev] ? ranks[prev] : idx + 1;
-    });
-    // seskup sdílená místa do "N.–M."
-    const byRank = new Map();
-    for (const pid of sorted) {
-      if (!byRank.has(ranks[pid])) byRank.set(ranks[pid], []);
-      byRank.get(ranks[pid]).push(pid);
-    }
-    const label = {};
-    for (const [rank, pids] of byRank) {
-      const last = rank + pids.length - 1;
-      label[rank] = rank === last ? rank + "." : rank + ".–" + last + ".";
-      for (const pid of pids) label[pid] = label[rank];
-    }
-    return label;
-  }
-
-  // Patička „Pořadí" u DOKONČENÉ hry musí odpovídat vítězi vyhlášenému výsledkovým
-  // panelem, tedy zohledňovat def.tiebreak — proto se staví z hotového state.ranking /
-  // frozenResult.ranking (rank hodnoty z engine, viz rankPlayers v js/engine.js), NE
-  // z prostého porovnání součtů jako ordinalRanking (to je jen pro rozehranou hru,
-  // kde žádné konečné pořadí/tiebreak ještě nedává smysl).
-  function rankLabelFromRanking(playerIds, ranking) {
-    const rankByPlayer = {};
-    for (const r of ranking) rankByPlayer[r.playerId] = r.rank;
-    const label = rankLabels(ranking);
-    const out = {};
-    for (const pid of playerIds) out[pid] = label[rankByPlayer[pid]];
-    return out;
-  }
-
   function flagCell(playerId, roundIndex, roundFlags, totalEvents) {
     const icons = [];
     const flagsForPlayer = (roundFlags && roundFlags[playerId]) || [];
@@ -91,7 +53,6 @@
     const nextTurn = state.next && state.next.type === "turn" ? state.next : null;
 
     const headerRow = el("tr", null,
-      el("th", { class: "col-round" }, "#"),
       ...game.players.map((p) => el("th", {
         class: nextTurn && p.id === nextTurn.playerId ? "next-player" : null,
       }, p.name)));
@@ -113,30 +74,92 @@
         const cls = [isNeg ? "neg" : null, isNextCell ? "next-cell" : null].filter(Boolean).join(" ") || null;
         return el("td", { class: cls }, valueText, ...flags);
       });
-      bodyRows.push(el("tr", null, el("td", { class: "col-round" }, String(i + 1)), ...cells));
+      bodyRows.push(el("tr", null, ...cells));
     }
-
-    const totalsRow = el("tr", { class: "row-totals" },
-      el("td", { class: "col-round" }, "Součet"),
-      ...playerIds.map((pid) => {
-        const total = state.totals[pid];
-        return el("td", { class: total < 0 ? "neg" : null }, String(total));
-      }));
-
-    const rankLabel = state.ranking
-      ? rankLabelFromRanking(playerIds, state.ranking)
-      : ordinalRanking(playerIds, state.totals, def.winnerDirection);
-    const rankRow = el("tr", { class: "row-ranking" },
-      el("td", { class: "col-round" }, "Pořadí"),
-      // sdílené místo (label obsahuje "–", např. "1.–2.") = remíza na daném místě -> 🤝
-      ...playerIds.map((pid) => el("td", null,
-        rankLabel[pid] + (rankLabel[pid].includes("–") ? " 🤝" : ""))));
 
     return el("section", { class: "score-table" },
       el("table", null,
         el("thead", null, headerRow),
-        el("tbody", null, ...bodyRows),
-        el("tfoot", null, totalsRow, rankRow)));
+        el("tbody", null, ...bodyRows)));
+  }
+
+  // === Scoreboard — sekce nad tabulkou ===
+  // Rozehraná hra: sloupcový graf průběžných součtů (jméno / sloupec / číslo).
+  // U her s cílovou hranicí (def.scoreScale) se kreslí i čára hranice a sloupce,
+  // které ji překročily, dostávají „vítěznou" (reach) nebo „vybouchlou" (avoid)
+  // barvu. Záporné součty rostou pod nulovou osu.
+  function scoreScaleOf(game, def) {
+    if (typeof def.scoreScale !== "function") return null;
+    const variants = g.Score.Games.mergeVariants(def, game.variants);
+    return def.scoreScale({ variants });
+  }
+
+  function renderScoreboard(game, def, tState) {
+    const scale = scoreScaleOf(game, def);
+    const totals = tState.totals;
+    const values = game.players.map((p) => totals[p.id] ?? 0);
+    const top = Math.max(scale ? scale.max : 0, ...values, 1);
+    const bottom = Math.min(0, ...values);
+    const HEIGHT = 150; // px kreslicí plochy
+    const px = HEIGHT / (top - bottom);
+    const zeroY = top * px;
+
+    const nameCells = [];
+    const barCells = [];
+    const totalCells = [];
+    for (const p of game.players) {
+      const v = totals[p.id] ?? 0;
+      const over = scale && v >= scale.max;
+      const barCls = "sb-bar" +
+        (over ? (scale.kind === "reach" ? " sb-win" : " sb-lost") : "");
+      const barTop = v >= 0 ? (top - v) * px : zeroY;
+      const barH = Math.max(Math.abs(v) * px, 2);
+      nameCells.push(el("span", { class: "sb-name" }, p.name));
+      barCells.push(el("div", { class: "sb-cell" },
+        el("div", {
+          class: barCls,
+          style: "top:" + barTop.toFixed(1) + "px;height:" + barH.toFixed(1) + "px",
+        })));
+      totalCells.push(el("span", {
+        class: "sb-total" + (v < 0 ? " neg" : "") +
+          (over ? (scale.kind === "reach" ? " sb-total-win" : " sb-total-lost") : ""),
+      }, String(v)));
+    }
+
+    const overlays = [];
+    if (scale) {
+      const y = (top - scale.max) * px;
+      overlays.push(el("div", {
+        class: "sb-line sb-line-" + scale.kind,
+        style: "top:" + y.toFixed(1) + "px",
+      }, el("span", { class: "sb-line-label" }, String(scale.max))));
+    }
+    if (bottom < 0) {
+      overlays.push(el("div", { class: "sb-line sb-line-zero", style: "top:" + zeroY.toFixed(1) + "px" }));
+    }
+
+    return el("section", { class: "scoreboard" },
+      el("div", { class: "sb-row" }, ...nameCells),
+      el("div", { class: "sb-bars", style: "height:" + HEIGHT + "px" }, ...overlays, ...barCells),
+      el("div", { class: "sb-row" }, ...totalCells));
+  }
+
+  // Dohraná hra: místo grafu finální pořadí — hráči pod sebou, vítěz(ové) zeleně,
+  // „vybouchlí" (přes hranici u avoid her, nebo v mínusu) červeně.
+  function renderFinalRanking(game, def, ranking) {
+    const scale = scoreScaleOf(game, def);
+    const labels = rankLabels(ranking);
+    const rows = ranking.map((r) => {
+      let cls = "rank-row";
+      if (r.rank === 1) cls += " rank-win";
+      else if ((scale && scale.kind === "avoid" && r.total >= scale.max) || r.total < 0)
+        cls += " rank-lost";
+      return el("div", { class: cls },
+        el("span", { class: "rank-pos" }, labels[r.rank]),
+        el("span", { class: "rank-name" }, r.name),
+        el("span", { class: "rank-total" }, String(r.total)));
+    });
+    return el("section", { class: "scoreboard final-ranking" }, ...rows);
   }
 
   // Zjišťuje z pravidel hry (ne ze seznamu slugů natvrdo), jestli je záporná hodnota
@@ -331,11 +354,12 @@
 
     const panel = el("aside", { class: "input-panel" },
       el("div", { class: "turn-banner" }, ...bannerChildren),
-      el("div", { class: "input-row" }, input, signBtn, ...quickBtns),
+      el("div", { class: "input-controls" }, input, signBtn, ...quickBtns),
       errorEl,
       confirmBtn,
       moveButtons.length ? el("div", { class: "special-buttons" }, ...moveButtons) : null,
-      specialArea);
+      specialArea,
+      undoBtn);
 
     setTimeout(() => { if (!input.disabled) input.focus(); }, 0);
 
@@ -373,20 +397,9 @@
       ? el("p", { class: "result-headline" }, "Remíza: " + joinNames(winnerNames))
       : el("p", { class: "result-headline" }, "🏆 " + winnerNames[0]);
 
-    const labels = rankLabels(ranking);
-    const rows = ranking.map((r) => el("tr", null,
-      el("td", null, labels[r.rank]),
-      el("td", null, r.name),
-      el("td", null, String(r.total))));
-
-    const table = el("table", { class: "result-table" }, el("tbody", null, ...rows));
-
-    const homeBtn = el("button", {
-      type: "button", class: "btn-action", style: "--accent:" + def.accentColor,
-      onclick: () => g.App.show("home"),
-    }, "← Domů");
-
-    const children = [headline, table, homeBtn];
+    // Finální pořadí se vypisuje ve scoreboard sekci nad tabulkou (renderFinalRanking),
+    // panel nese jen vyhlášení vítěze a případnou opravu posledního zápisu.
+    const children = [headline];
 
     if (canFix) {
       const fixBtn = el("button", {
@@ -454,15 +467,14 @@
       errorEls[p.id] = errorEl;
 
       const showStarter = typeof def.starter === "function" && p.order === starterIndex;
-      const rowChildren = [
-        el("span", { class: "input-player-name" },
-          p.name, showStarter ? el("span", { class: "starter-badge" }, " začíná") : null),
-        input,
-      ];
+      // Jméno hráče na vlastním řádku, veškeré ovládání (input + tlačítka) pod ním
+      // v jedné wrapovací řadě — nikdy se nesmí stát, že část ovládání je vedle
+      // jména a zbytek přeteče pod něj.
+      const controls = [input];
       if (allowsNegative) {
         const signBtn = signToggleBtn(input);
         signBtns[p.id] = signBtn;
-        rowChildren.push(signBtn);
+        controls.push(signBtn);
       }
 
       if (hasCaboFlag) {
@@ -473,7 +485,7 @@
             refreshToggleStates();
           },
         }, "📢 Kabo");
-        rowChildren.push(caboBtn);
+        controls.push(caboBtn);
         caboBtn._pid = p.id;
       }
 
@@ -490,10 +502,14 @@
         }, (move.icon ? move.icon + " " : "") + move.label);
         btn._pid = p.id;
         btn._moveId = move.id;
-        rowChildren.push(btn);
+        controls.push(btn);
       }
 
-      return el("div", { class: "input-row" }, ...rowChildren, errorEl);
+      return el("div", { class: "input-row" },
+        el("span", { class: "input-player-name" },
+          p.name, showStarter ? el("span", { class: "starter-badge" }, " začíná") : null),
+        el("div", { class: "input-controls" }, ...controls),
+        errorEl);
     });
 
     function refreshToggleStates() {
@@ -578,9 +594,10 @@
     }
 
     const panel = el("aside", { class: "input-panel" },
-      el("h2", null, "Kolo " + (roundIndex + 1)),
+      el("h2", null, (roundIndex + 1) + ". kolo"),
       ...playerRows,
-      confirmBtn);
+      confirmBtn,
+      undoBtn);
 
     setNumericInputsDisabled();
 
@@ -631,7 +648,7 @@
       const busyRef = { value: false };
 
       const undoBtn = isFinished ? null : el("button", {
-        class: "btn-back btn-undo",
+        class: "btn-undo",
         disabled: game.log.length === 0 ? "disabled" : null,
         onclick: async () => {
           if (busyRef.value) return;
@@ -646,17 +663,12 @@
             undoBtn.disabled = false;
           }
         },
-      }, "Zpět");
+      }, "↩ Vrátit poslední zápis");
 
-      const header = el("header", { class: "game-header", style: "--accent:" + def.accentColor },
-        el("button", {
-          class: "btn-back",
-          onclick: () => g.App.show("home"),
-        }, "← Domů"),
-        el("h1", { style: "--accent:" + def.accentColor },
-          el("span", { class: "tile-icon" }, def.icon),
-          " " + def.name + (game.label ? " — " + game.label : "")),
-        undoBtn);
+      const header = g.Score.dom.pageHeader({
+        icon: def.icon, title: def.name, accent: def.accentColor,
+        onBack: () => g.App.show("hub", { gameTypeId: game.gameTypeId }),
+      });
 
       // tabulka: dohraná hra (wasFinished) čte jen ze zamrzlého snímku — NE z derive —
       // aby historie zůstala neměnná i po budoucí úpravě pravidel dané hry.
@@ -672,13 +684,22 @@
         : state;
       const table = renderTable(tableState, game, def);
 
+      // Sekce nad tabulkou: u rozehrané hry sloupcový graf součtů (bez pořadí),
+      // u dohrané finální pořadí s barevným odlišením vítěze a „vybouchlých".
+      const scoreboard = isFinished
+        ? renderFinalRanking(game, def,
+            wasFinished ? game.frozenResult.ranking : state.ranking)
+        : renderScoreboard(game, def, tableState);
+
       const panel = isFinished
         ? renderResultPanel(game, def, wasFinished ? game.frozenResult : state, !wasFinished, rerender, busyRef)
         : renderInputPanel(game, def, state, rerender, busyRef, undoBtn);
 
       container.append(
         header,
-        el("div", { class: "game-body" }, table, panel));
+        el("div", { class: "game-body", style: "--accent:" + def.accentColor },
+          el("div", { class: "game-main" }, scoreboard, table),
+          panel));
     },
   };
 
