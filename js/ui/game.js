@@ -112,7 +112,9 @@
     const rankLabel = ordinalRanking(playerIds, state.totals, def.winnerDirection);
     const rankRow = el("tr", { class: "row-ranking" },
       el("td", { class: "col-round" }, "Pořadí"),
-      ...playerIds.map((pid) => el("td", null, rankLabel[pid])));
+      // sdílené místo (label obsahuje "–", např. "1.–2.") = remíza na daném místě -> 🤝
+      ...playerIds.map((pid) => el("td", null,
+        rankLabel[pid] + (rankLabel[pid].includes("–") ? " 🤝" : ""))));
 
     return el("section", { class: "score-table" },
       el("table", null,
@@ -121,10 +123,32 @@
         el("tfoot", null, totalsRow, rankRow)));
   }
 
-  function renderSequentialPanel(game, def, state, rerender, busyRef) {
+  // Zjišťuje z pravidel hry (ne ze seznamu slugů natvrdo), jestli je záporná hodnota
+  // v hlavním číselném poli validní — u her, kde ano (SCOUT, ruční zápis u Pirátů),
+  // se vedle pole kreslí tlačítko „±" (iOS numerická klávesnice nemá mínus).
+  function allowsNegativeInput(def) {
+    return def.validateInput(-100) === null;
+  }
+
+  function toggleSign(input) {
+    const v = input.value;
+    if (v.trim() === "") return;
+    input.value = v.startsWith("-") ? v.slice(1) : "-" + v;
+    input.focus();
+  }
+
+  function signToggleBtn(input) {
+    return el("button", {
+      type: "button", class: "btn-sign", "aria-label": "Přepnout znaménko",
+      onclick: () => toggleSign(input),
+    }, "±");
+  }
+
+  function renderSequentialPanel(game, def, state, rerender, busyRef, undoBtn) {
     const next = state.next;
     const player = game.players.find((p) => p.id === next.playerId);
     const specialMoves = def.specialMoves || [];
+    const allowsNegative = allowsNegativeInput(def);
 
     const specialState = { moveId: null };
     const paramInputs = {}; // paramId -> input element (pro aktivní speciál)
@@ -135,6 +159,7 @@
       type: "text", inputmode: "numeric", autocomplete: "off",
       class: "score-input score-input-wide",
     });
+    const signBtn = allowsNegative ? signToggleBtn(input) : null;
 
     const quickAmounts = [100, 200, 500, 1000];
     const quickBtns = quickAmounts.map((amt) => el("button", {
@@ -156,6 +181,7 @@
     function setNormalDisabled(disabled) {
       input.disabled = disabled;
       confirmBtn.disabled = disabled;
+      if (signBtn) signBtn.disabled = disabled;
       for (const btn of quickBtns) btn.disabled = disabled;
     }
 
@@ -163,6 +189,8 @@
       if (busyRef.value) return;
       busyRef.value = true;
       confirmBtn.disabled = true;
+      const undoWasDisabled = undoBtn ? undoBtn.disabled : false;
+      if (undoBtn) undoBtn.disabled = true;
       try {
         errorEl.textContent = "";
         const raw = input.value.trim();
@@ -183,6 +211,7 @@
       } finally {
         busyRef.value = false;
         confirmBtn.disabled = false;
+        if (undoBtn) undoBtn.disabled = undoWasDisabled;
       }
     }
 
@@ -224,6 +253,8 @@
     async function onConfirmSpecial(move) {
       if (busyRef.value) return;
       busyRef.value = true;
+      const undoWasDisabled = undoBtn ? undoBtn.disabled : false;
+      if (undoBtn) undoBtn.disabled = true;
       try {
         specialErrorEl.textContent = "";
         const flags = {};
@@ -256,6 +287,7 @@
         await rerender();
       } finally {
         busyRef.value = false;
+        if (undoBtn) undoBtn.disabled = undoWasDisabled;
       }
     }
 
@@ -283,7 +315,7 @@
 
     const panel = el("aside", { class: "input-panel" },
       el("div", { class: "turn-banner" }, ...bannerChildren),
-      el("div", { class: "input-row" }, input, ...quickBtns),
+      el("div", { class: "input-row" }, input, signBtn, ...quickBtns),
       errorEl,
       confirmBtn,
       moveButtons.length ? el("div", { class: "special-buttons" }, ...moveButtons) : null,
@@ -364,9 +396,9 @@
     return el("aside", { class: "input-panel result-panel" }, ...children);
   }
 
-  function renderInputPanel(container, game, def, state, rerender, busyRef) {
+  function renderInputPanel(container, game, def, state, rerender, busyRef, undoBtn) {
     if (def.inputModel !== "allPlayersAtOnce") {
-      return renderSequentialPanel(game, def, state, rerender, busyRef);
+      return renderSequentialPanel(game, def, state, rerender, busyRef, undoBtn);
     }
 
     const next = state.next;
@@ -380,11 +412,15 @@
     const specialState = { moveId: null, playerId: null };
     const hasCaboFlag = def.id === "cabo"; // toggle „Kabo" je specifický pro CABO, ne obecná specialMove
     const specialMoves = def.specialMoves || [];
+    const allowsNegative = allowsNegativeInput(def);
+
+    const signBtns = {}; // playerId -> tlačítko ± (jen když allowsNegative)
 
     function setNumericInputsDisabled() {
       const active = !!specialState.playerId;
       for (const pid of Object.keys(inputs)) {
         inputs[pid].disabled = active;
+        if (signBtns[pid]) signBtns[pid].disabled = active;
       }
     }
 
@@ -403,6 +439,11 @@
           p.name, showStarter ? el("span", { class: "starter-badge" }, " začíná") : null),
         input,
       ];
+      if (allowsNegative) {
+        const signBtn = signToggleBtn(input);
+        signBtns[p.id] = signBtn;
+        rowChildren.push(signBtn);
+      }
 
       if (hasCaboFlag) {
         const caboBtn = el("button", {
@@ -460,6 +501,8 @@
       if (busyRef.value) return;
       busyRef.value = true;
       confirmBtn.disabled = true;
+      const undoWasDisabled = undoBtn ? undoBtn.disabled : false;
+      if (undoBtn) undoBtn.disabled = true;
       try {
         for (const pid of Object.keys(errorEls)) errorEls[pid].textContent = "";
 
@@ -510,6 +553,7 @@
       } finally {
         busyRef.value = false;
         confirmBtn.disabled = false;
+        if (undoBtn) undoBtn.disabled = undoWasDisabled;
       }
     }
 
@@ -584,7 +628,7 @@
         },
       }, "Zpět");
 
-      const header = el("header", { class: "game-header" },
+      const header = el("header", { class: "game-header", style: "--accent:" + def.accentColor },
         el("button", {
           class: "btn-back",
           onclick: () => g.App.show("home"),
@@ -609,7 +653,7 @@
 
       const panel = isFinished
         ? renderResultPanel(game, def, wasFinished ? game.frozenResult : state, !wasFinished, rerender, busyRef)
-        : renderInputPanel(container, game, def, state, rerender, busyRef);
+        : renderInputPanel(container, game, def, state, rerender, busyRef, undoBtn);
 
       container.append(
         header,

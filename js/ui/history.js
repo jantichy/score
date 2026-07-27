@@ -72,7 +72,7 @@
             },
           }, "🗑 Smazat");
 
-          return el("div", {
+          return g.Score.dom.pressable(el("div", {
             class: "history-item", role: "button",
             onclick: () => g.App.show("game", { gameId: game.id }),
           },
@@ -80,7 +80,7 @@
               el("span", { class: "history-date" }, dateText),
               el("span", { class: "history-label" }, itemLabel(game)),
               statusEl),
-            el("div", { class: "history-actions" }, renameBtn, deleteBtn));
+            el("div", { class: "history-actions" }, renameBtn, deleteBtn)));
         });
         rows.push(el("div", { class: "history-list" }, ...items));
       }

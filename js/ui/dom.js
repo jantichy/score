@@ -16,6 +16,25 @@
     return node;
   }
   function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+  // Klávesová dostupnost pro prvky, které nejsou nativní <button>/<a>, ale mají
+  // role="button" a onclick handler (viz home.js .btn-continue, hub.js .hub-unfinished,
+  // history.js .history-item). Přidá tabindex a Enter/mezerník = click().
+  // Kontroluje e.target === node, aby se předešlo dvojímu spuštění, když je uvnitř
+  // vnořené interaktivní dítě (např. tlačítka v history-item) a klávesová událost
+  // probublá nahoru z jeho vlastního focusu.
+  function pressable(node) {
+    node.tabIndex = 0;
+    node.addEventListener("keydown", (ev) => {
+      if (ev.target !== node) return;
+      if (ev.key === "Enter" || ev.key === " " || ev.key === "Spacebar") {
+        ev.preventDefault();
+        node.click();
+      }
+    });
+    return node;
+  }
+
   g.Score = g.Score || {};
-  g.Score.dom = { el, clear };
+  g.Score.dom = { el, clear, pressable };
 })(globalThis);

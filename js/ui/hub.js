@@ -38,10 +38,10 @@
           " " + def.name),
       ];
       if (unfinishedCount > 0) {
-        rows.push(el("p", {
+        rows.push(g.Score.dom.pressable(el("p", {
             class: "hub-unfinished", role: "button",
             onclick: () => g.App.show("history", { gameTypeId }),
-          }, unfinishedLabel(unfinishedCount)));
+          }, unfinishedLabel(unfinishedCount))));
       }
       rows.push(el("div", { class: "hub-actions" }, ...actions));
       rows.push(el("button", {

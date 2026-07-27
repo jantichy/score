@@ -20,10 +20,10 @@
       el("span", { class: "tile-icon" }, def.icon),
       el("span", { class: "tile-name" }, def.name),
       last && last.status === "in_progress"
-        ? el("span", {
+        ? g.Score.dom.pressable(el("span", {
             class: "btn-continue", role: "button",
             onclick: (ev) => { ev.stopPropagation(); g.App.show("game", { gameId: last.id }); },
-          }, "Pokračovat")
+          }, "Pokračovat"))
         : null);
   }
 

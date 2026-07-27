@@ -162,10 +162,11 @@
       const variantsSection = el("div", { class: "setup-variants" },
         ...variantFields.map((f) =>
           el("div", { class: "variant-field" },
-            el("label", { class: "variant-label" }, f.def.label),
+            // U typu "bool" nese popisek text uvnitř f.node (checkbox-option label z
+            // buildVariantField) — samostatný "variant-label" by ho vykreslil 2×.
+            isBoolType(f.def.type) ? null : el("label", { class: "variant-label" }, f.def.label),
             f.def.help ? el("p", { class: "variant-help" }, f.def.help) : null,
-            isBoolType(f.def.type) ? null : f.node,
-            isBoolType(f.def.type) ? f.node : null,
+            f.node,
             f.errorEl)));
 
       const submitBtn = el("button", {
