@@ -1,0 +1,119 @@
+"use strict";
+const assert = require("node:assert");
+require("../js/games.js");
+require("../js/engine.js");
+require("../games/pirates.js");
+const { Engine, Games } = globalThis.Score;
+const def = Games.get("pirates");
+
+function makeGame(variants, names) {
+  return Engine.newGame({ def, players: names || ["A", "B", "C"],
+    variants: variants || {}, now: 1 });
+}
+function entry(game, patch) {
+  const next = Engine.derive(game, def).next;
+  assert.ok(next && next.type === "turn", "očekávám tah, hra už skončila?");
+  Engine.addEntry(game, [{ playerId: next.playerId, roundIndex: next.roundIndex,
+    value: null, special: null, flags: {}, ...patch }], 2);
+  return next;
+}
+const turn = (g, value) => entry(g, { value });
+const skullIsland = (g, skulls, pirateCard) =>
+  entry(g, { special: "skullIsland", flags: { skulls, pirateCard: !!pirateCard } });
+const shipFail = (g, penalty) => entry(g, { special: "shipFail", flags: { penalty } });
+
+test("střídání hráčů v pořadí, roundIndex per hráč", () => {
+  const g = makeGame();
+  assert.strictEqual(turn(g, 300).playerId, "p1");
+  assert.strictEqual(turn(g, 0).playerId, "p2");
+  assert.strictEqual(turn(g, 500).playerId, "p3");
+  const n4 = Engine.derive(g, def).next;
+  assert.deepStrictEqual([n4.playerId, n4.roundIndex], ["p1", 1]);
+});
+
+test("ostrov lebek: pachatel 0, ostatní −100×N", () => {
+  const g = makeGame();
+  turn(g, 300); turn(g, 200);
+  skullIsland(g, 6, false);           // p3
+  const st = Engine.derive(g, def);
+  assert.deepStrictEqual(st.totals, { p1: -300, p2: -400, p3: 0 });
+  assert.ok(st.rounds[0].flags.p3.includes("skullIsland"));
+  assert.ok(st.rounds[0].flags.p1.includes("skullVictim"));
+});
+
+test("ostrov lebek s kartou Pirát: −200×N", () => {
+  const g = makeGame();
+  skullIsland(g, 2, true);            // p1 hned na startu
+  assert.deepStrictEqual(Engine.derive(g, def).totals, { p1: 0, p2: -400, p3: -400 });
+});
+
+test("pirátská loď — neúspěch: −penalizace", () => {
+  const g = makeGame();
+  turn(g, 0); shipFail(g, 500);       // p2
+  assert.strictEqual(Engine.derive(g, def).totals.p2, -500);
+});
+
+test("dosažení cíle spustí rozhodující kolo pro ostatní", () => {
+  const g = makeGame({ targetScore: 1000 });
+  turn(g, 1000);                       // p1 ≥ cíl
+  const n = Engine.derive(g, def).next;
+  assert.deepStrictEqual([n.playerId, !!n.note], ["p2", true]);
+  turn(g, 0);                          // p2 poslední tah
+  const n2 = Engine.derive(g, def).next;
+  assert.strictEqual(n2.playerId, "p3");
+  turn(g, 500);                        // p3 poslední tah
+  const st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, true);
+  assert.deepStrictEqual(st.winnerIds, ["p1"]);
+});
+
+test("v rozhodujícím kole lze triggera přeskočit — vyhrává nejvyšší ≥ cíl", () => {
+  const g = makeGame({ targetScore: 1000 });
+  turn(g, 1000); turn(g, 1200); turn(g, 0);
+  const st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, true);
+  assert.deepStrictEqual(st.winnerIds, ["p2"]);
+});
+
+test("stažení pod cíl ostrovem lebek → hra pokračuje, další ≥ cíl auto-vyhrává", () => {
+  const g = makeGame({ targetScore: 1000 }, ["A", "B"]);
+  turn(g, 1000);                       // p1 trigger
+  skullIsland(g, 11, false);           // p2: sám 0, p1 −1100 → p1 = −100, nikdo ≥ cíl
+  let st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, false);
+  assert.strictEqual(st.next.note, null);      // zpět v normální fázi
+  turn(g, 900);                        // p1: 800 — pod cílem, pokračuje se
+  turn(g, 1000);                       // p2: 1000 ≥ cíl → auto-výhra bez rozhodujícího kola
+  st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, true);
+  assert.deepStrictEqual(st.winnerIds, ["p2"]);
+});
+
+test("defenderReroll: přehozený trigger dostane obranný hod", () => {
+  const g = makeGame({ targetScore: 1000, defenderReroll: true }, ["A", "B"]);
+  turn(g, 1000);                       // p1 trigger
+  turn(g, 1500);                       // p2 přehodil
+  let st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, false);
+  assert.deepStrictEqual([st.next.playerId, st.next.note], ["p1", "Obranný hod!"]);
+  turn(g, 600);                        // p1: 1600 → obrana uspěla
+  st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, true);
+  assert.deepStrictEqual(st.winnerIds, ["p1"]);
+});
+
+test("defenderReroll vypnutý (default): žádná obrana", () => {
+  const g = makeGame({ targetScore: 1000 }, ["A", "B"]);
+  turn(g, 1000); turn(g, 1500);
+  const st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, true);
+  assert.deepStrictEqual(st.winnerIds, ["p2"]);
+});
+
+test("validateInput: násobky 100, zápor i nula OK", () => {
+  assert.strictEqual(def.validateInput(600, {}), null);
+  assert.strictEqual(def.validateInput(-200, {}), null);
+  assert.strictEqual(def.validateInput(0, {}), null);
+  assert.ok(typeof def.validateInput(250, {}) === "string");
+  assert.ok(typeof def.validateInput(1.5, {}) === "string");
+});
