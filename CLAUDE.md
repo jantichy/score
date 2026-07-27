@@ -24,31 +24,9 @@ Každá hra má jeden **slug**, používaný všude: adresář modulu `games/<sl
 
 MVP hry: `cabo`, `pirates`, `scout`.
 
-## Struktura projektu
-
-```
-score/
-  index.html
-  CLAUDE.md          # tento soubor
-  docs/
-    PRD.md           # detailní zadání
-    PLAN.md          # implementační plán (úkoly, rozhraní, testy)
-  games/             # moduly her — vše k jedné hře pohromadě v jejím adresáři
-    cabo/
-      game.js        # plugin definice (Games.register)
-      test.js        # testy pravidel hry (spouští je tests/run.js automaticky)
-      rules.md       # plná konsolidovaná pravidla (trvalá reference)
-      rules/         # originální předlohy pravidel (PDF apod.)
-    pirates/         # …stejná struktura…
-    scout/           # …stejná struktura…
-  js/                # obecný engine a UI (neví nic o konkrétních hrách)
-  css/app.css
-  tests/             # obecné testy (engine, registr) + runner run.js
-```
-
 ## Stav
 
-MVP implementované na větvi `score-mvp` (jádro, IndexedDB, hry `cabo`/`pirates`/`scout`, domovská obrazovka i historie) — viz `docs/PRD.md` §8 pro checklist. Spuštění: dvojklik na `index.html` z disku. Testy: `node tests/run.js`.
+MVP je hotové a mergnuté v `main` (jádro, IndexedDB, hry `cabo`/`pirates`/`scout`, domovská obrazovka i historie) — viz `docs/PRD.md` §8 pro checklist. Spuštění: dvojklik na `index.html` z disku. Testy: `node tests/run.js` (obecné testy jádra + UI testy nad DOM stubem `tests/dom-stub.js` + automaticky i testy her z `games/<slug>/test.js`). Dohodnuté chování — včetně UI detailů (focus, layout, skrývání formulářů) — se vždy kryje regresním testem: pravidla her v `games/<slug>/test.js`, UI v `tests/ui.test.js`.
 
 ## Pravidla her
 

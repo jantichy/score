@@ -26,6 +26,17 @@ test("registrace a metadata", () => {
   assert.deepStrictEqual(def.playerRange, { min: 2, max: 4 });
 });
 
+test("ikony dle dohody: jednotný tlampač 📢 pro Kabo, kamikaze 💣, oživení ❤️", () => {
+  assert.strictEqual(def.name, "Kabo");
+  for (const flag of ["cabo", "caboFail", "caboSuccess"]) {
+    assert.strictEqual(def.flagMeta[flag].icon, "📢", flag + " nese tlampač");
+  }
+  assert.strictEqual(def.flagMeta.kamikaze.icon, "💣");
+  assert.strictEqual(def.specialMoves.find((m) => m.id === "kamikaze").icon, "💣");
+  assert.strictEqual(def.roundFlags[0].label, "📢 Kabo");
+  assert.ok(def.roundFlags[0].required, "volající Kaba je povinný");
+});
+
 test("manual: skóre = zapsaná čísla, cabo jen flag", () => {
   const g = makeGame();
   caboRound(g, [{ value: 0, cabo: true }, { value: 7 }, { value: 12 }]);

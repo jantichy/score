@@ -56,6 +56,12 @@ test("dva ostrovy lebek ve stejném roundIndex se kumulují", () => {
   assert.deepStrictEqual(st.totals, { p1: -300, p2: -500, p3: -800 });
 });
 
+test("definice: speciály jsou jen Ostrov lebek a Vybouchnutí (Pirátská loď zrušena)", () => {
+  assert.deepStrictEqual(def.specialMoves.map((m) => m.id), ["skullIsland", "bust"]);
+  assert.deepStrictEqual(Object.keys(def.flagMeta), ["skullIsland", "bust"],
+    "vlajky v tabulce: žádný skullVictim (☠️➖) ani shipFail (⚓)");
+});
+
 test("vybouchnutí: 0 bodů, tah se počítá a hraje další hráč", () => {
   const g = makeGame();
   turn(g, 300);
