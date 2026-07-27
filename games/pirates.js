@@ -117,8 +117,19 @@
         : "Zadej násobek 100 (může být záporný).";
     },
     specialMoves: [
-      { id: "skullIsland", label: "Ostrov lebek", icon: "💀", params: ["skulls", "pirateCard"] },
-      { id: "shipFail", label: "Pirátská loď — neúspěch", icon: "🚢", params: ["penalty"] },
+      {
+        id: "skullIsland", label: "Ostrov lebek", icon: "💀",
+        params: [
+          { id: "skulls", label: "Počet lebek", type: "number" },
+          { id: "pirateCard", label: "Karta Pirát (×2)", type: "bool" },
+        ],
+      },
+      {
+        id: "shipFail", label: "Pirátská loď — neúspěch", icon: "🚢",
+        params: [
+          { id: "penalty", label: "Penalizace z karty", type: "number" },
+        ],
+      },
     ],
     roundScores(records, ctx) {
       const scores = {};

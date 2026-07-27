@@ -16,19 +16,18 @@
     lowestZero: { icon: "0️⃣", title: "Nejnižší součet — 0" },
   };
 
-  // Metadata parametrů speciálů pro sekvenční panel (games/*.js definuje jen id parametrů
-  // jako pole stringů — popisky/typy pro UI si drží panel sám, viz Task 12).
-  const SEQ_PARAM_META = {
-    skulls: { label: "Počet lebek", type: "number" },
-    pirateCard: { label: "Karta Pirát (×2)", type: "bool" },
-    penalty: { label: "Penalizace", type: "number", multipleOf100: true },
+  // Vstupní pravidla pro číselné parametry speciálů v sekvenčním panelu (klíčováno přes
+  // paramId — jde jen o validaci formuláře, ne o popis/typ parametru; ten dodává
+  // def.specialMoves[].params přímo z pluginu, viz Task 12 fix).
+  const SEQ_PARAM_RULES = {
+    penalty: { multipleOf100: true },
   };
 
-  function validateSeqParam(paramId, meta, raw) {
-    if (meta.type === "bool") return null;
+  function validateSeqParam(paramId, raw) {
     const parsed = /^\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
     if (!Number.isInteger(parsed) || parsed <= 0) return "Zadej celé číslo větší než 0.";
-    if (meta.multipleOf100 && parsed % 100 !== 0) return "Zadej násobek 100.";
+    const rule = SEQ_PARAM_RULES[paramId];
+    if (rule && rule.multipleOf100 && parsed % 100 !== 0) return "Zadej násobek 100.";
     return null;
   }
 
@@ -194,16 +193,15 @@
 
       if (!move) return;
 
-      const rows = (move.params || []).map((paramId) => {
-        const meta = SEQ_PARAM_META[paramId] || { label: paramId, type: "number" };
+      const rows = (move.params || []).map((param) => {
         let field;
-        if (meta.type === "bool") {
+        if (param.type === "bool") {
           field = el("input", { type: "checkbox" });
         } else {
           field = el("input", { type: "text", inputmode: "numeric", autocomplete: "off", class: "score-input" });
         }
-        paramInputs[paramId] = { field, meta, paramId };
-        return el("label", { class: "param-row" }, meta.label, field);
+        paramInputs[param.id] = { field, param };
+        return el("label", { class: "param-row" }, param.label, field);
       });
 
       const submitBtn = el("button", {
@@ -230,20 +228,20 @@
         specialErrorEl.textContent = "";
         const flags = {};
         let firstErrorField = null;
-        for (const paramId of move.params || []) {
-          const { field, meta } = paramInputs[paramId];
-          if (meta.type === "bool") {
-            flags[paramId] = !!field.checked;
+        for (const param of move.params || []) {
+          const { field } = paramInputs[param.id];
+          if (param.type === "bool") {
+            flags[param.id] = !!field.checked;
             continue;
           }
           const raw = field.value.trim();
-          const err = validateSeqParam(paramId, meta, raw);
+          const err = validateSeqParam(param.id, raw);
           if (err) {
             specialErrorEl.textContent = err;
             if (!firstErrorField) firstErrorField = field;
             continue;
           }
-          flags[paramId] = parseInt(raw, 10);
+          flags[param.id] = parseInt(raw, 10);
         }
         if (firstErrorField) {
           firstErrorField.focus();
