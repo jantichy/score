@@ -51,3 +51,50 @@ button { min-height: var(--tap); font-size: 1rem; cursor: pointer; }
   background: none; border: none; color: var(--muted);
   padding: 0; font-size: 1rem;
 }
+
+/* === Založení hry === */
+.setup-section-title { margin-top: 20px; margin-bottom: 8px; font-size: 1.1rem; }
+.setup-players {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.player-row {
+  display: flex; align-items: center; gap: 6px;
+}
+.player-row input[type="text"] {
+  flex: 1; min-height: var(--tap); padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 6px; font-size: 1rem;
+}
+.btn-order, .btn-remove {
+  min-width: var(--tap); min-height: var(--tap);
+  background: var(--card); border: 1px solid var(--line); border-radius: 6px;
+  font-size: 1.1rem; line-height: 1;
+}
+.btn-order:disabled, .btn-remove:disabled { opacity: 0.35; cursor: default; }
+.btn-add-player {
+  margin-top: 8px; min-height: var(--tap); padding: 0 16px;
+  background: var(--card); border: 1px dashed var(--line); border-radius: 6px;
+  font-size: 1rem;
+}
+.btn-add-player:disabled { opacity: 0.35; cursor: default; }
+.setup-variants {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.variant-field { display: flex; flex-direction: column; gap: 4px; }
+.variant-label { font-weight: 600; }
+.variant-help { color: var(--muted); font-size: 0.9rem; }
+.variant-radio-group { display: flex; flex-wrap: wrap; gap: 12px 20px; }
+.radio-option, .checkbox-option {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap);
+  font-size: 1rem;
+}
+.radio-option input[type="text"] {
+  min-height: 36px; width: 7em; margin-left: 4px; padding: 4px 8px;
+  border: 1px solid var(--line); border-radius: 6px; font-size: 1rem;
+}
+.setup-variants select {
+  min-height: var(--tap); padding: 6px 10px;
+  border: 1px solid var(--line); border-radius: 6px; font-size: 1rem;
+}
+.field-error {
+  color: #b91c1c; font-size: 0.9rem; min-height: 1.2em;
+}
