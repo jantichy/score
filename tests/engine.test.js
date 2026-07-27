@@ -170,6 +170,20 @@ test("fixedRounds: roundsPlanned a konec po posledním kole", () => {
   assert.strictEqual(st.next, null);
 });
 
+test("freeze: snímek výsledku + status; unfreeze vrátí zpět", () => {
+  const game = makeGame();
+  round(game, [30, 10]);
+  const st = Engine.derive(game, TestDef);
+  Engine.freeze(game, st, 5000);
+  assert.strictEqual(game.status, "finished");
+  assert.strictEqual(game.endedAt, 5000);
+  assert.deepStrictEqual(game.frozenResult.winnerIds, ["p1"]);
+  assert.deepStrictEqual(game.frozenResult.totals, { p1: 30, p2: 10 });
+  Engine.unfreeze(game);
+  assert.strictEqual(game.status, "in_progress");
+  assert.strictEqual(game.frozenResult, null);
+});
+
 test("variants: merge s defaulty (starší hra bez klíče)", () => {
   const game = makeGame();       // variants {} → target spadne na default 30
   round(game, [30, 0]);

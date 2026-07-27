@@ -294,10 +294,77 @@
     return panel;
   }
 
-  function renderInputPanel(container, game, def, state, rerender, busyRef) {
-    if (state.finished) {
-      return el("aside", { class: "input-panel" }, el("p", null, "Konec hry"));
+  function rankLabels(ranking) {
+    const byRank = new Map();
+    for (const r of ranking) {
+      if (!byRank.has(r.rank)) byRank.set(r.rank, []);
+      byRank.get(r.rank).push(r);
     }
+    const label = {};
+    for (const [rank, group] of byRank) {
+      const last = rank + group.length - 1;
+      label[rank] = rank === last ? rank + "." : rank + ".–" + last + ".";
+    }
+    return label;
+  }
+
+  function joinNames(names) {
+    if (names.length <= 1) return names.join("");
+    if (names.length === 2) return names[0] + " a " + names[1];
+    return names.slice(0, -1).join(", ") + " a " + names[names.length - 1];
+  }
+
+  function renderResultPanel(game, def, result, canFix, rerender, busyRef) {
+    const ranking = result.ranking;
+    const winnerNames = result.winnerIds.map((id) => {
+      const r = ranking.find((x) => x.playerId === id);
+      return r ? r.name : "?";
+    });
+
+    const headline = result.tie
+      ? el("p", { class: "result-headline" }, "Remíza: " + joinNames(winnerNames))
+      : el("p", { class: "result-headline" }, "🏆 " + winnerNames[0]);
+
+    const labels = rankLabels(ranking);
+    const rows = ranking.map((r) => el("tr", null,
+      el("td", null, labels[r.rank]),
+      el("td", null, r.name),
+      el("td", null, String(r.total))));
+
+    const table = el("table", { class: "result-table" }, el("tbody", null, ...rows));
+
+    const homeBtn = el("button", {
+      type: "button", class: "btn-action", style: "--accent:" + def.accentColor,
+      onclick: () => g.App.show("home"),
+    }, "← Domů");
+
+    const children = [headline, table, homeBtn];
+
+    if (canFix) {
+      const fixBtn = el("button", {
+        type: "button", class: "btn-back",
+        onclick: async () => {
+          if (busyRef.value) return;
+          busyRef.value = true;
+          fixBtn.disabled = true;
+          try {
+            g.Score.Engine.unfreeze(game);
+            g.Score.Engine.undo(game);
+            await g.Score.DB.putGame(game);
+            await rerender();
+          } finally {
+            busyRef.value = false;
+            fixBtn.disabled = false;
+          }
+        },
+      }, "Zpět (oprava zápisu)");
+      children.push(fixBtn);
+    }
+
+    return el("aside", { class: "input-panel result-panel" }, ...children);
+  }
+
+  function renderInputPanel(container, game, def, state, rerender, busyRef) {
     if (def.inputModel !== "allPlayersAtOnce") {
       return renderSequentialPanel(game, def, state, rerender, busyRef);
     }
@@ -470,17 +537,32 @@
         return;
       }
       const def = g.Score.Games.get(game.gameTypeId);
-      const state = g.Score.Engine.derive(game, def);
+
+      // wasFinished: hra byla dohraná a zamrzlá už PŘED tímto renderem (např. otevřená
+      // z historie) → čte se jen z frozenResult, žádná oprava není možná (Task 14).
+      // Pokud derive teprve TEĎ zjistí konec hry, zamrzneme ji tady a oprava (Zpět) zůstává
+      // dostupná, dokud uživatel neopustí obrazovku (viz brief Úkolu 13).
+      const wasFinished = game.status === "finished";
+      let state = null;
+      if (!wasFinished) {
+        state = g.Score.Engine.derive(game, def);
+        if (state.finished) {
+          g.Score.Engine.freeze(game, state, Date.now());
+          await g.Score.DB.putGame(game);
+        }
+      }
+      const isFinished = wasFinished || state.finished;
 
       async function rerender() {
         await gameScreen.render(container, { gameId });
       }
 
-      // sdílený re-entrancy guard mezi undo a potvrzením kola (viz onConfirm v renderInputPanel):
-      // brání dvojímu zápisu/odebrání kola při rychlém dvojkliku, dokud běží mutace + DB.putGame.
+      // sdílený re-entrancy guard mezi undo/opravou a potvrzením kola (viz onConfirm
+      // v renderInputPanel a fixBtn v renderResultPanel): brání dvojímu zápisu/odebrání
+      // kola při rychlém dvojkliku, dokud běží mutace + DB.putGame.
       const busyRef = { value: false };
 
-      const undoBtn = el("button", {
+      const undoBtn = isFinished ? null : el("button", {
         class: "btn-back btn-undo",
         disabled: game.log.length === 0 ? "disabled" : null,
         onclick: async () => {
@@ -508,8 +590,22 @@
           " " + def.name + (game.label ? " — " + game.label : "")),
         undoBtn);
 
-      const table = renderTable(state, game, def);
-      const panel = renderInputPanel(container, game, def, state, rerender, busyRef);
+      // tabulka: dohraná hra (wasFinished) čte jen ze zamrzlého snímku — NE z derive —
+      // aby historie zůstala neměnná i po budoucí úpravě pravidel dané hry.
+      const tableState = wasFinished
+        ? {
+          rounds: game.frozenResult.rounds,
+          totals: game.frozenResult.totals,
+          totalEvents: game.frozenResult.totalEvents,
+          roundsPlanned: null,
+          next: null,
+        }
+        : state;
+      const table = renderTable(tableState, game, def);
+
+      const panel = isFinished
+        ? renderResultPanel(game, def, wasFinished ? game.frozenResult : state, !wasFinished, rerender, busyRef)
+        : renderInputPanel(container, game, def, state, rerender, busyRef);
 
       container.append(
         header,

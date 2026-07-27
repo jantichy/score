@@ -183,3 +183,12 @@ button { min-height: var(--tap); font-size: 1rem; cursor: pointer; }
 /* Zvýraznění příštího zápisu v tabulce (sekvenční model) */
 .score-table th.next-player { background: var(--accent, #f0efe9); color: #fff; }
 .score-table td.next-cell { outline: 2px solid var(--accent, var(--fg)); outline-offset: -2px; }
+
+/* === Výsledkový panel (konec hry) === */
+.result-panel { gap: 14px; }
+.result-headline { font-size: 1.3rem; font-weight: 700; text-align: center; }
+.result-table { width: 100%; border-collapse: collapse; }
+.result-table td { padding: 8px 6px; border-bottom: 1px solid var(--line); }
+.result-table tr:last-child td { border-bottom: none; }
+.result-table td:first-child { width: 3.5em; color: var(--muted); font-weight: 600; }
+.result-table td:last-child { text-align: right; font-weight: 700; }

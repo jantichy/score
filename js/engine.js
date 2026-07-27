@@ -172,6 +172,28 @@
     return state;
   }
 
+  function freeze(game, state, now) {
+    game.status = "finished";
+    game.endedAt = now;
+    game.frozenResult = {
+      endedAt: now,
+      ranking: state.ranking,
+      winnerIds: state.winnerIds,
+      tie: state.tie,
+      rounds: state.rounds.map(({ roundIndex, scores, flags }) => ({ roundIndex, scores, flags })),
+      totals: state.totals,
+      totalEvents: state.totalEvents,
+    };
+    return game;
+  }
+
+  function unfreeze(game) {
+    game.status = "in_progress";
+    game.endedAt = null;
+    game.frozenResult = null;
+    return game;
+  }
+
   g.Score = g.Score || {};
-  g.Score.Engine = { newGame, addEntry, undo, derive };
+  g.Score.Engine = { newGame, addEntry, undo, derive, freeze, unfreeze };
 })(globalThis);
