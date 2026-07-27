@@ -123,7 +123,7 @@
     roundScores(records, ctx) {
       const scores = {};
       const flags = {};
-      const skullRec = records.find((r) => r.special === "skullIsland");
+      const skullVictimFlagged = {};
 
       for (const rec of records) {
         if (rec.special === "shipFail") {
@@ -137,13 +137,17 @@
         }
       }
 
-      if (skullRec) {
-        const mult = skullRec.flags.pirateCard ? 2 : 1;
-        const penalty = 100 * skullRec.flags.skulls * mult;
+      for (const rec of records) {
+        if (rec.special !== "skullIsland") continue;
+        const mult = rec.flags.pirateCard ? 2 : 1;
+        const penalty = 100 * rec.flags.skulls * mult;
         for (const player of ctx.players) {
-          if (player.id === skullRec.playerId) continue;
+          if (player.id === rec.playerId) continue;
           scores[player.id] = (scores[player.id] || 0) - penalty;
-          addFlag(flags, player.id, "skullVictim");
+          if (!skullVictimFlagged[player.id]) {
+            addFlag(flags, player.id, "skullVictim");
+            skullVictimFlagged[player.id] = true;
+          }
         }
       }
 

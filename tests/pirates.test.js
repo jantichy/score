@@ -47,6 +47,15 @@ test("ostrov lebek s kartou Pirát: −200×N", () => {
   assert.deepStrictEqual(Engine.derive(g, def).totals, { p1: 0, p2: -400, p3: -400 });
 });
 
+test("dva ostrovy lebek ve stejném roundIndex se kumulují", () => {
+  const g = makeGame();
+  skullIsland(g, 5, false);           // p1
+  skullIsland(g, 3, false);           // p2
+  turn(g, 0);                         // p3
+  const st = Engine.derive(g, def);
+  assert.deepStrictEqual(st.totals, { p1: -300, p2: -500, p3: -800 });
+});
+
 test("pirátská loď — neúspěch: −penalizace", () => {
   const g = makeGame();
   turn(g, 0); shipFail(g, 500);       // p2
@@ -87,6 +96,20 @@ test("stažení pod cíl ostrovem lebek → hra pokračuje, další ≥ cíl aut
   st = Engine.derive(g, def);
   assert.strictEqual(st.finished, true);
   assert.deepStrictEqual(st.winnerIds, ["p2"]);
+});
+
+test("fronta rozhodujícího kola: pokles triggera uprostřed fronty ji nezmění", () => {
+  const g = makeGame({ targetScore: 1000 });
+  turn(g, 1000);                       // p1 trigger, fronta = [p2, p3]
+  skullIsland(g, 11, false);           // p2: sám 0, p1 i p3 −1100 → p1 pod cíl
+  const st1 = Engine.derive(g, def);
+  assert.strictEqual(st1.finished, false);
+  assert.strictEqual(st1.next.playerId, "p3");
+  assert.ok(st1.next.note != null);    // p3 je pořád ve frontě, dostane svůj poslední tah
+  turn(g, 0);                          // p3 poslední tah fronty
+  const st2 = Engine.derive(g, def);
+  assert.strictEqual(st2.finished, false);
+  assert.strictEqual(st2.next.note, null);   // nikdo ≥ cíl → zpět normální fáze
 });
 
 test("defenderReroll: přehozený trigger dostane obranný hod", () => {
