@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="cs"><head><meta charset="utf-8"><title>DB test</title></head>
+<body><pre id="out"></pre>
+<script src="../js/db.js"></script>
+<script>
+(async () => {
+  const out = document.getElementById("out");
+  const log = (m) => out.textContent += m + "\n";
+  const assert = (cond, m) => { if (!cond) throw new Error(m); log("✓ " + m); };
+  const DB = Score.DB;
+  await DB.open();
+  const id = "test-" + Math.random().toString(36).slice(2);
+  await DB.putGame({ id, gameTypeId: "cabo", log: [] });
+  assert((await DB.getGame(id)).gameTypeId === "cabo", "putGame + getGame");
+  assert((await DB.allGames()).some((x) => x.id === id), "allGames obsahuje záznam");
+  await DB.setMeta("lastVariants", { cabo: { caboPenalty: 5 } });
+  assert((await DB.getMeta("lastVariants")).cabo.caboPenalty === 5, "setMeta + getMeta");
+  assert((await DB.getMeta("neni")) === undefined, "getMeta chybějícího klíče → undefined");
+  await DB.deleteGame(id);
+  assert((await DB.getGame(id)) === undefined, "deleteGame");
+  log("HOTOVO — vše prošlo");
+})().catch((e) => document.getElementById("out").textContent += "✗ " + e.message);
+</script></body></html>
