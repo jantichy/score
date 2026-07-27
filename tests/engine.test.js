@@ -124,6 +124,31 @@ test("transformTotals + memo + totalEvents", () => {
   assert.deepStrictEqual(st.totalEvents, [{ roundIndex: 0, playerId: "p1", type: "halved" }]);
 });
 
+test("transformTotals vrací nový objekt (ne mutaci)", () => {
+  const def = {
+    ...TestDef,
+    variants: [{ id: "target", label: "Cíl", type: "number", default: 100 }],
+    transformTotals(totals, tctx) {
+      const events = [];
+      const next = Object.fromEntries(Object.entries(totals).map(([pid, t]) => {
+        if (t === 20 && !tctx.memo[pid]) {
+          tctx.memo[pid] = true;
+          events.push({ playerId: pid, type: "halved" });
+          return [pid, 10];
+        }
+        return [pid, t];
+      }));
+      return { totals: next, events };
+    },
+  };
+  const game = makeGame();
+  round(game, [20, 5]);   // p1: 20 → nový objekt s p1: 10
+  round(game, [10, 5]);   // p1: 20 znovu, memo → už se nepůlí
+  const st = Engine.derive(game, def);
+  assert.strictEqual(st.totals.p1, 20);
+  assert.deepStrictEqual(st.totalEvents, [{ roundIndex: 0, playerId: "p1", type: "halved" }]);
+});
+
 test("fixedRounds: roundsPlanned a konec po posledním kole", () => {
   const def = {
     ...TestDef, endType: "fixedRounds",

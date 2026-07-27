@@ -99,6 +99,7 @@
     const totals = {};
     for (const pid of playerIds) totals[pid] = 0;
 
+    let currentTotals = totals;
     const memo = {};
     const totalEvents = [];
     const rounds = [];
@@ -106,18 +107,21 @@
     for (const { roundIndex, records } of grouped) {
       const { scores, flags } = def.roundScores(records, ctx);
       for (const pid of playerIds) {
-        if (scores[pid] !== undefined) totals[pid] += scores[pid];
+        if (scores[pid] !== undefined) currentTotals[pid] += scores[pid];
       }
       if (typeof def.transformTotals === "function") {
-        const result = def.transformTotals(totals, { roundIndex, memo, ...ctx });
-        if (result && result.events) {
-          for (const ev of result.events) totalEvents.push({ ...ev, roundIndex });
+        const result = def.transformTotals(currentTotals, { roundIndex, memo, ...ctx });
+        if (result) {
+          currentTotals = result.totals || currentTotals;
+          if (result.events) {
+            for (const ev of result.events) totalEvents.push({ ...ev, roundIndex });
+          }
         }
       }
       rounds.push({ roundIndex, records, scores, flags: flags || {} });
     }
 
-    const core = { rounds, totals };
+    const core = { rounds, totals: currentTotals };
     const overResult = def.isGameOver(core, ctx);
     const finished = !!(overResult && overResult.finished);
 
@@ -127,7 +131,7 @@
 
     const state = {
       rounds,
-      totals,
+      totals: currentTotals,
       totalEvents,
       roundsPlanned,
       finished,
@@ -136,10 +140,10 @@
 
     if (finished) {
       const direction = def.winnerDirection;
-      const ranks = rankPlayers(playerIds, totals, direction, def, core, ctx);
+      const ranks = rankPlayers(playerIds, currentTotals, direction, def, core, ctx);
       const ranking = ranks.map(({ playerId, rank }) => {
         const player = game.players.find((p) => p.id === playerId);
-        return { playerId, name: player.name, total: totals[playerId], rank };
+        return { playerId, name: player.name, total: currentTotals[playerId], rank };
       });
       const topRank = Math.min(...ranking.map((r) => r.rank));
       const winnerIds = ranking.filter((r) => r.rank === topRank).map((r) => r.playerId);
