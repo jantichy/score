@@ -7,7 +7,11 @@
       g.Score.dom.clear(container);
       const screen = g.Score.UI && g.Score.UI[name];
       if (!screen) { container.textContent = `Obrazovka „${name}“ neexistuje.`; return; }
-      screen.render(container, params || {});
+      // render() bývá async (DB dotazy) — bez zachycení by odmítnutý promise skončil jako
+      // unhandled rejection a uživatel by zůstal koukat na prázdnou obrazovku.
+      Promise.resolve(screen.render(container, params || {})).catch((err) => {
+        container.textContent = "Chyba: " + err.message;
+      });
     },
     async start() {
       await g.Score.DB.open();
