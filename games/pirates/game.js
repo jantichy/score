@@ -103,6 +103,14 @@
     scoreScale(ctx) { return { max: ctx.variants.targetScore, kind: "reach" }; },
     // Závod k cíli: smysl má jen vítěz (kdo první dosáhl cíle) → 🏆 bez medailí.
     rankingStyle: "winnerOnly",
+    // Rychlá přičítací tlačítka vstupu (body jsou násobky 100).
+    quickAmounts: [100, 200, 500, 1000],
+    // Ikony a tooltipy vlajek v tabulce.
+    flagMeta: {
+      skullIsland: { icon: "☠️", title: "Ostrov lebek" },
+      skullVictim: { icon: "☠️➖", title: "Ostrov lebek — oběť" },
+      shipFail: { icon: "⚓", title: "Pirátská loď — neúspěch" },
+    },
     variants: [
       {
         id: "targetScore",
@@ -142,7 +150,7 @@
       {
         id: "shipFail", label: "Pirátská loď — neúspěch", icon: "🚢",
         params: [
-          { id: "penalty", label: "Penalizace z karty", type: "number" },
+          { id: "penalty", label: "Penalizace z karty", type: "number", step: 100 },
         ],
       },
     ],

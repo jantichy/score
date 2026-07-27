@@ -65,6 +65,24 @@
       return Number.isInteger(value) && value >= 0 ? null : "Zadej celé číslo ≥ 0.";
     },
     specialMoves: [{ id: "kamikaze", label: "Kamikaze", icon: "💣", params: [] }],
+    // Per-hráč přepínač kola: označení volajícího „Kabo!" (max 1, povinné
+    // v běžném kole; nevyplněné skóre volajícího = potvrzený úspěch → 0).
+    roundFlags: [{
+      id: "cabo",
+      label: "📢 Kabo",
+      required: true,
+      requiredMessage: "Označ hráče, který zahlásil Kabo.",
+      emptyScoreValue: 0,
+    }],
+    // Ikony a tooltipy vlajek v tabulce — tlampač 📢 je jednotný signál
+    // zahlášení Kaba (úspěch i neúspěch, rozdíl nese rozpis "2+10").
+    flagMeta: {
+      cabo: { icon: "📢", title: "Volal Kabo" },
+      caboFail: { icon: "📢", title: "Neúspěšné Kabo (+penalizace)" },
+      caboSuccess: { icon: "📢", title: "Úspěšné Kabo" },
+      kamikaze: { icon: "💣", title: "Kamikaze" },
+      lowestZero: { icon: "0️⃣", title: "Nejnižší součet — 0" },
+    },
     roundScores(records, ctx) {
       const scores = {};
       const flags = {};
@@ -134,7 +152,11 @@
         if (next[pid] === 100 && !memo.halved[pid]) {
           next[pid] = 50;
           memo.halved[pid] = true;
-          events.push({ playerId: pid, type: "halved" });
+          // adjust/title/icon čte tabulka: buňka vypíše "…−50" a 🍀 (oživení)
+          events.push({
+            playerId: pid, type: "halved", adjust: -50,
+            title: "Přesně 100 → 50", icon: "🍀",
+          });
         }
       }
       return { totals: next, events };

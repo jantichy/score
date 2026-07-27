@@ -3,54 +3,43 @@
   const el = g.Score.dom.el;
   const domClear = g.Score.dom.clear;
 
-  // Pozn.: kamikazeVictim a halved nemají ikonu — jejich efekt se v buňce
-  // vypisuje explicitně jako rozpis ("+50", "5-50"), ikona by ho zdvojovala.
-  // Tlampač 📢 je jednotný signál zahlášení Kaba na všech místech (úspěch
-  // i neúspěch — ten je stejně vidět z rozpisu penalizace "2+10").
-  const FLAG_META = {
-    cabo: { icon: "📢", title: "Volal Kabo" },
-    caboFail: { icon: "📢", title: "Neúspěšné Kabo (+penalizace)" },
-    caboSuccess: { icon: "📢", title: "Úspěšné Kabo" },
-    kamikaze: { icon: "💣", title: "Kamikaze" },
-    skullIsland: { icon: "☠️", title: "Ostrov lebek" },
-    skullVictim: { icon: "☠️➖", title: "Ostrov lebek — oběť" },
-    shipFail: { icon: "⚓", title: "Pirátská loď — neúspěch" },
-    lowestZero: { icon: "0️⃣", title: "Nejnižší součet — 0" },
-  };
-
-  // Vstupní pravidla pro číselné parametry speciálů v sekvenčním panelu (klíčováno přes
-  // paramId — jde jen o validaci formuláře, ne o popis/typ parametru; ten dodává
-  // def.specialMoves[].params přímo z pluginu, viz Task 12 fix).
-  const SEQ_PARAM_RULES = {
-    penalty: { multipleOf100: true },
-  };
-
-  function validateSeqParam(paramId, raw) {
-    const parsed = /^\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
-    if (!Number.isInteger(parsed) || parsed <= 0) return "Zadej celé číslo větší než 0.";
-    const rule = SEQ_PARAM_RULES[paramId];
-    if (rule && rule.multipleOf100 && parsed % 100 !== 0) return "Zadej násobek 100.";
-    return null;
-  }
-
-  function flagCell(playerId, roundIndex, roundFlags, totalEvents) {
+  // Jádro UI nezná žádné herní vlajky ani pravidla — ikony/tooltipty vlajek
+  // dodává hra přes def.flagMeta, korekce součtů nesou samy události
+  // z def.transformTotals (pole adjust + title).
+  function flagCell(def, playerId, roundFlags) {
     const icons = [];
-    const flagsForPlayer = (roundFlags && roundFlags[playerId]) || [];
-    for (const flag of flagsForPlayer) {
-      const meta = FLAG_META[flag];
-      if (meta) icons.push(el("span", { class: "cell-flag", title: meta.title }, meta.icon));
+    const meta = def.flagMeta || {};
+    for (const flag of (roundFlags && roundFlags[playerId]) || []) {
+      const m = meta[flag];
+      if (m) icons.push(el("span", { class: "cell-flag", title: m.title }, m.icon));
     }
     return icons;
   }
 
-  // Půlení přesné 100 → 50 se v buňce vypisuje explicitně jako „-50"
-  // za zapsanou hodnotou (např. "5-50"), ne ikonou.
-  function halvedSuffix(playerId, roundIndex, totalEvents) {
+  // Událost nad součty s polem adjust (např. půlení 100 → 50 u KABA) se
+  // v buňce vypisuje explicitně za hodnotou ("5−50"); popisek nese ev.title,
+  // volitelná ev.icon se přidá za rozpis (KABO: 🍀 jako signál oživení).
+  function adjustSuffix(playerId, roundIndex, totalEvents) {
     for (const ev of totalEvents) {
-      if (ev.roundIndex === roundIndex && ev.playerId === playerId && ev.type === "halved") {
-        return el("span", { class: "cell-adjust", title: "Přesně 100 → 50" }, "−50");
+      if (ev.roundIndex === roundIndex && ev.playerId === playerId &&
+          typeof ev.adjust === "number") {
+        const parts = [el("span", { class: "cell-adjust", title: ev.title || null },
+          g.Score.dom.fmtScore(ev.adjust < 0 ? String(ev.adjust) : "+" + ev.adjust))];
+        if (ev.icon) {
+          parts.push(el("span", { class: "cell-flag", title: ev.title || null }, ev.icon));
+        }
+        return parts;
       }
     }
+    return null;
+  }
+
+  // Validace číselného parametru speciálu: celé číslo > 0; násobek param.step,
+  // pokud ho definice parametru ve hře uvádí.
+  function validateSeqParam(param, raw) {
+    const parsed = /^\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
+    if (!Number.isInteger(parsed) || parsed <= 0) return "Zadej celé číslo větší než 0.";
+    if (param.step && parsed % param.step !== 0) return "Zadej násobek " + param.step + ".";
     return null;
   }
 
@@ -76,17 +65,17 @@
         const isNextCell = nextTurn && nextTurn.roundIndex === i && nextTurn.playerId === pid;
         if (!round) return el("td", { class: isNextCell ? "next-cell" : null });
         const value = round.scores[pid];
-        const flags = flagCell(pid, round.roundIndex, round.flags, state.totalEvents);
+        const flags = flagCell(def, pid, round.flags);
         // rozpis od pluginu ("2+10", "+50", "800-600") má přednost před sečteným
         // číslem; fmtScore převádí spojovníky na typografický minus U+2212
         const displayText = round.display && round.display[pid];
         const valueText = value === undefined && !displayText
           ? ""
           : g.Score.dom.fmtScore(displayText || value);
-        const halved = halvedSuffix(pid, round.roundIndex, state.totalEvents);
+        const adjust = adjustSuffix(pid, round.roundIndex, state.totalEvents);
         const isNeg = typeof value === "number" && value < 0;
         const cls = [isNeg ? "neg" : null, isNextCell ? "next-cell" : null].filter(Boolean).join(" ") || null;
-        return el("td", { class: cls }, valueText, halved, ...flags);
+        return el("td", { class: cls }, valueText, adjust, ...flags);
       });
       bodyRows.push(el("tr", null,
         el("td", { class: "col-round" }, String(i + 1)), ...cells));
@@ -231,7 +220,8 @@
     });
     const signBtn = allowsNegative ? signToggleBtn(input) : null;
 
-    const quickAmounts = [100, 200, 500, 1000];
+    // Rychlá přičítací tlačítka deklaruje hra (Piráti: násobky 100).
+    const quickAmounts = def.quickAmounts || [];
     const quickBtns = quickAmounts.map((amt) => el("button", {
       type: "button", class: "btn-quick",
       onclick: () => {
@@ -336,7 +326,7 @@
             continue;
           }
           const raw = field.value.trim();
-          const err = validateSeqParam(param.id, raw);
+          const err = validateSeqParam(param, raw);
           if (err) {
             specialErrorEl.textContent = err;
             if (!firstErrorField) firstErrorField = field;
@@ -499,10 +489,13 @@
 
     const inputs = {}; // playerId -> input element
     const errorEls = {}; // playerId -> error element
-    const caboState = { playerId: null };
+    // Per-hráč přepínače kola deklaruje hra přes def.roundFlags (KABO: volání
+    // „Kabo") — jádro UI o konkrétních vlajkách nic neví. Každý přepínač drží
+    // max jednoho označeného hráče (flagSel[rf.id] = playerId | null).
+    const roundFlagDefs = def.roundFlags || [];
+    const flagSel = {};
     // aktivace jakéhokoli speciálu z def.specialMoves deaktivuje číselná pole (max 1 aktivní)
     const specialState = { moveId: null, playerId: null };
-    const hasCaboFlag = def.id === "cabo"; // toggle „Kabo" je specifický pro CABO, ne obecná specialMove
     const specialMoves = def.specialMoves || [];
     const allowsNegative = allowsNegativeInput(def);
 
@@ -536,17 +529,17 @@
         controls.push(signBtn);
       }
 
-      if (hasCaboFlag) {
-        const caboBtn = el("button", {
-          type: "button", class: "btn-special btn-cabo",
+      for (const rf of roundFlagDefs) {
+        const flagBtn = el("button", {
+          type: "button", class: "btn-special btn-flag-" + rf.id,
           onclick: () => {
-            caboState.playerId = caboState.playerId === p.id ? null : p.id;
+            flagSel[rf.id] = flagSel[rf.id] === p.id ? null : p.id;
             refreshToggleStates();
             if (!input.disabled) input.focus();
           },
-        }, "📢 Kabo");
-        controls.push(caboBtn);
-        caboBtn._pid = p.id;
+        }, rf.label);
+        controls.push(flagBtn);
+        flagBtn._pid = p.id;
       }
 
       for (const move of specialMoves) {
@@ -583,8 +576,10 @@
 
     function refreshToggleStates() {
       for (const row of playerRows) {
-        for (const btn of row.querySelectorAll(".btn-cabo")) {
-          btn.classList.toggle("active", btn._pid === caboState.playerId);
+        for (const rf of roundFlagDefs) {
+          for (const btn of row.querySelectorAll(".btn-flag-" + rf.id)) {
+            btn.classList.toggle("active", btn._pid === flagSel[rf.id]);
+          }
         }
         for (const move of specialMoves) {
           for (const btn of row.querySelectorAll(".btn-move-" + move.id)) {
@@ -597,11 +592,13 @@
     refreshToggleStates();
 
     // Předvyplnění vráceného kola (viz rerender({prefill}) u undo/opravy):
-    // hodnoty, označení Kabo i aktivní kamikaze se obnoví, stačí opravit detail.
+    // hodnoty, přepínače kola i aktivní speciál se obnoví, stačí opravit detail.
     if (prefill) {
       for (const rec of prefill) {
         if (!inputs[rec.playerId]) continue;
-        if (rec.flags && rec.flags.cabo) caboState.playerId = rec.playerId;
+        for (const rf of roundFlagDefs) {
+          if (rec.flags && rec.flags[rf.id]) flagSel[rf.id] = rec.playerId;
+        }
         if (rec.special) {
           specialState.playerId = rec.playerId;
           specialState.moveId = rec.special;
@@ -633,18 +630,22 @@
 
         const specialActive = !!specialState.playerId;
 
-        // CABO: běžné kolo končí voláním „Kabo!" — bez označeného volajícího
-        // kolo nejde zapsat (kamikaze kolo volajícího nevyžaduje).
-        if (hasCaboFlag && !specialActive && !caboState.playerId) {
-          panelError.textContent = "Označ hráče, který zahlásil Kabo.";
-          return;
+        // Povinné přepínače kola (deklaruje hra, KABO: volající) — v běžném
+        // kole musí být označen hráč; kolo se speciálem povinnost nemá.
+        for (const rf of roundFlagDefs) {
+          if (rf.required && !specialActive && !flagSel[rf.id]) {
+            panelError.textContent = rf.requiredMessage || "Označ hráče (" + rf.label + ").";
+            return;
+          }
         }
         const records = [];
         let firstErrorInput = null;
 
         for (const p of game.players) {
           const flags = {};
-          if (caboState.playerId === p.id) flags.cabo = true;
+          for (const rf of roundFlagDefs) {
+            if (flagSel[rf.id] === p.id) flags[rf.id] = true;
+          }
 
           if (specialActive) {
             records.push({
@@ -658,10 +659,13 @@
           }
 
           let raw = inputs[p.id].value.trim();
-          // CABO: volající s nevyplněným skóre = hráči si u stolu potvrdili
-          // úspěšné Kabo → zapisuje se mu 0 (v raw módu 0 = nejnižší součet,
-          // vede na tentýž výsledek).
-          if (raw === "" && hasCaboFlag && caboState.playerId === p.id) raw = "0";
+          // Nevyplněné skóre hráče označeného přepínačem s emptyScoreValue
+          // (KABO: potvrzené úspěšné volání → 0) se doplní deklarovanou hodnotou.
+          if (raw === "") {
+            const rf = roundFlagDefs.find((f) =>
+              flagSel[f.id] === p.id && f.emptyScoreValue !== undefined);
+            if (rf) raw = String(rf.emptyScoreValue);
+          }
           const parsed = /^-?\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
           const err = def.validateInput(parsed, { player: p });
           if (err) {

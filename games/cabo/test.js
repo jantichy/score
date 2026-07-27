@@ -78,7 +78,10 @@ test("první přesná 100 → 50, hra pokračuje", () => {
   const st = Engine.derive(g, def);
   assert.strictEqual(st.totals.p1, 50);
   assert.strictEqual(st.finished, false);
-  assert.deepStrictEqual(st.totalEvents, [{ roundIndex: 1, playerId: "p1", type: "halved" }]);
+  assert.deepStrictEqual(st.totalEvents, [{
+    roundIndex: 1, playerId: "p1", type: "halved",
+    adjust: -50, title: "Přesně 100 → 50", icon: "🍀",
+  }]);
 });
 
 test("druhá přesná 100 (po vyčerpané záchraně) → konec", () => {
