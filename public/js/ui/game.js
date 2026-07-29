@@ -269,11 +269,15 @@
 
     // Režimy zápisu se přepínají celé (hidden) — viditelný je vždy jen
     // formulář aktivního režimu, nic se nedisabluje.
+    // Rychlá tlačítka tvoří nedělitelný blok (.quick-group) v jednom
+    // wrapovacím řádku s inputem: buď se vejdou celá za něj, nebo celá
+    // odskočí na nový řádek — nikdy se nelámou uprostřed.
     const normalForm = el("div", { class: "mode-form" },
-      el("div", { class: "input-controls" }, input),
-      (signBtn || zeroBtn || quickBtns.length)
-        ? el("div", { class: "input-controls" }, signBtn, zeroBtn, ...quickBtns)
-        : null,
+      el("div", { class: "input-controls" },
+        input,
+        (signBtn || zeroBtn || quickBtns.length)
+          ? el("div", { class: "quick-group" }, signBtn, zeroBtn, ...quickBtns)
+          : null),
       errorEl,
       confirmBtn);
 

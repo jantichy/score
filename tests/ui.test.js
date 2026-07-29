@@ -78,19 +78,20 @@ test("UI sekvenční panel: přepínač režimů nahoře, Běžná hra default, 
   assert.strictEqual(c.querySelector(".special-area").hidden, true);
 });
 
-test("UI sekvenční panel: tlačítko 0 a rychlá tlačítka na vlastním řádku POD inputem", async () => {
+test("UI sekvenční panel: rychlá tlačítka jako nedělitelný blok v řádku s inputem", async () => {
   const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
   const c = await renderGameScreen(game);
   const rows = c.querySelector(".mode-form").querySelectorAll(".input-controls");
-  assert.strictEqual(rows.length, 2, "input a tlačítka jsou ve dvou řadách");
-  assert.deepStrictEqual(rows[0].children.map((n) => n.tagName), ["INPUT"],
-    "první řada obsahuje jen input");
-  assert.deepStrictEqual(texts(rows[1].querySelectorAll("button")),
+  assert.strictEqual(rows.length, 1, "input i tlačítka sdílejí jeden wrapovací řádek");
+  assert.deepStrictEqual(rows[0].children.map((n) => n.tagName), ["INPUT", "DIV"],
+    "za inputem následuje jediný blok tlačítek (celý se buď vejde, nebo celý zalomí)");
+  const group = rows[0].querySelector(".quick-group");
+  assert.deepStrictEqual(texts(group.querySelectorAll("button")),
     ["0", "+100", "+200", "+500", "+1000"],
-    "druhá řada: 0 (vynulování) a rychlá tlačítka — žádné ± (zápory řeší Pirátská loď)");
+    "0 (vynulování) a rychlá tlačítka — žádné ± (zápory řeší Pirátská loď)");
   const input = c.querySelector(".score-input-wide");
   input.value = "700";
-  rows[1].querySelectorAll("button")[0].click();
+  group.querySelectorAll("button")[0].click();
   assert.strictEqual(input.value, "0", "tlačítko 0 vynuluje zadání");
   assert.strictEqual(document.activeElement, input, "focus se vrátí do inputu");
 });
