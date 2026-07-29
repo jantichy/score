@@ -70,14 +70,15 @@ test("UI sekvenční panel: přepínač režimů nahoře, Běžná hra default, 
   const toggle = c.querySelector(".mode-toggle");
   assert.ok(toggle, "panel má nahoře přepínač režimů");
   assert.deepStrictEqual(texts(toggle.querySelectorAll("button")),
-    ["Běžná hra", "💀 Ostrov lebek", "💥 Vybouchnutí"]);
+    ["Běžná hra", "Výbuch", "Pirátská loď", "Ostrov lebek"],
+    "pořadí režimů dle dohody, bez ikon (ať se vejdou do jednoho řádku)");
   const [normalBtn] = toggle.querySelectorAll("button");
   assert.ok(normalBtn.classList.contains("active"), "Běžná hra je default aktivní");
   assert.strictEqual(c.querySelector(".mode-form").hidden, false);
   assert.strictEqual(c.querySelector(".special-area").hidden, true);
 });
 
-test("UI sekvenční panel: ± a rychlá tlačítka na vlastním řádku POD inputem", async () => {
+test("UI sekvenční panel: tlačítko 0 a rychlá tlačítka na vlastním řádku POD inputem", async () => {
   const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
   const c = await renderGameScreen(game);
   const rows = c.querySelector(".mode-form").querySelectorAll(".input-controls");
@@ -85,7 +86,13 @@ test("UI sekvenční panel: ± a rychlá tlačítka na vlastním řádku POD inp
   assert.deepStrictEqual(rows[0].children.map((n) => n.tagName), ["INPUT"],
     "první řada obsahuje jen input");
   assert.deepStrictEqual(texts(rows[1].querySelectorAll("button")),
-    ["±", "+100", "+200", "+500", "+1000"], "druhá řada: ± a rychlá tlačítka");
+    ["0", "+100", "+200", "+500", "+1000"],
+    "druhá řada: 0 (vynulování) a rychlá tlačítka — žádné ± (zápory řeší Pirátská loď)");
+  const input = c.querySelector(".score-input-wide");
+  input.value = "700";
+  rows[1].querySelectorAll("button")[0].click();
+  assert.strictEqual(input.value, "0", "tlačítko 0 vynuluje zadání");
+  assert.strictEqual(document.activeElement, input, "focus se vrátí do inputu");
 });
 
 test("UI sekvenční panel: hlavní input má po vykreslení focus", async () => {
@@ -94,35 +101,78 @@ test("UI sekvenční panel: hlavní input má po vykreslení focus", async () =>
   assert.strictEqual(document.activeElement, c.querySelector(".score-input-wide"));
 });
 
-test("UI režim Ostrov lebek: běžný formulář zmizí, parametry ano, žádné Zrušit", async () => {
+test("UI režim Ostrov lebek: lebky 4–10 tlačítky, karta Pirát, žádný textový input", async () => {
   const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
   const c = await renderGameScreen(game);
-  const skullBtn = c.querySelector(".mode-toggle").querySelectorAll("button")[1];
+  const skullBtn = c.querySelector(".mode-toggle").querySelectorAll("button")[3];
   skullBtn.click();
   assert.strictEqual(c.querySelector(".mode-form").hidden, true);
   const special = c.querySelector(".special-area");
   assert.strictEqual(special.hidden, false);
-  assert.deepStrictEqual(texts(special.querySelectorAll(".param-row")).map((t) => t.trim()),
-    ["Počet lebek", "Karta Pirát (×2)"]);
+  const skullChoices = special.querySelector(".choice-group").querySelectorAll("button");
+  assert.deepStrictEqual(texts(skullChoices), ["4", "5", "6", "7", "8", "9", "10"],
+    "počet lebek se vybírá tlačítky (max 10 = 8 kostek + 2 z karty)");
+  const inputs = special.querySelectorAll("input");
+  assert.strictEqual(inputs.length, 1, "jediný input je checkbox karty Pirát");
+  assert.strictEqual(inputs[0].getAttribute("type"), "checkbox");
   const btnTexts = texts(c.querySelector(".input-panel").querySelectorAll("button"));
   assert.ok(btnTexts.includes("Zapsat: Ostrov lebek"));
   assert.ok(!btnTexts.includes("Zrušit"), "tlačítko Zrušit už neexistuje");
+  // výběr 6 lebek → zapíše special s flags.skulls = 6
+  skullChoices[2].click();
+  assert.ok(skullChoices[2].classList.contains("active"), "vybraná hodnota je zvýrazněná");
+  special.querySelector(".btn-action").click();
+  await tick(); await tick();
+  assert.strictEqual(game.log.length, 1);
+  assert.strictEqual(game.log[0].special, "skullIsland");
+  assert.deepStrictEqual(game.log[0].flags, { skulls: 6, pirateCard: false });
 });
 
-test("UI režim Vybouchnutí: žádný input, jen Zapsat; zapíše special bust", async () => {
+test("UI režim Výbuch: žádný input, jen Zapsat; zapíše special bust", async () => {
   const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
   const c = await renderGameScreen(game);
-  const bustBtn = c.querySelector(".mode-toggle").querySelectorAll("button")[2];
+  const bustBtn = c.querySelector(".mode-toggle").querySelectorAll("button")[1];
   bustBtn.click();
   const special = c.querySelector(".special-area");
   assert.strictEqual(special.querySelectorAll("input").length, 0,
-    "režim Vybouchnutí nemá vůbec žádný input");
+    "režim Výbuch nemá vůbec žádný input");
   const submit = special.querySelector("button");
-  assert.strictEqual(submit.textContent, "Zapsat: Vybouchnutí");
+  assert.strictEqual(submit.textContent, "Zapsat: Výbuch");
   submit.click();
   await tick(); await tick();
   assert.strictEqual(game.log.length, 1);
   assert.strictEqual(game.log[0].special, "bust");
+});
+
+test("UI režim Pirátská loď: jen tlačítka −300/−500/−1000 a Zapsat", async () => {
+  const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
+  const c = await renderGameScreen(game);
+  const shipBtn = c.querySelector(".mode-toggle").querySelectorAll("button")[2];
+  shipBtn.click();
+  const special = c.querySelector(".special-area");
+  const choices = special.querySelector(".choice-group").querySelectorAll("button");
+  assert.deepStrictEqual(texts(choices), ["−300", "−500", "−1000"],
+    "typografický minus U+2212, ne spojovník");
+  assert.strictEqual(special.querySelectorAll("input").length, 0,
+    "žádný textový input ani checkbox");
+  choices[1].click();
+  special.querySelector(".btn-action").click();
+  await tick(); await tick();
+  assert.strictEqual(game.log.length, 1);
+  assert.strictEqual(game.log[0].special, "pirateShip");
+  assert.deepStrictEqual(game.log[0].flags, { penalty: 500 });
+});
+
+test("UI Pirátská loď bez vybrané penalizace se nezapíše a ohlásí chybu", async () => {
+  const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
+  const c = await renderGameScreen(game);
+  c.querySelector(".mode-toggle").querySelectorAll("button")[2].click();
+  const special = c.querySelector(".special-area");
+  special.querySelector(".btn-action").click();
+  await tick(); await tick();
+  assert.strictEqual(game.log.length, 0, "nic se nezapsalo");
+  const errors = texts(special.querySelectorAll(".field-error")).filter(Boolean);
+  assert.ok(errors.length > 0, "chyba o chybějícím výběru je vidět");
 });
 
 test("UI přepnutí zpět na Běžnou hru schová formulář speciálu", async () => {

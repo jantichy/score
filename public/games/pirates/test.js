@@ -25,6 +25,8 @@ const turn = (g, value) => entry(g, { value });
 const skullIsland = (g, skulls, pirateCard) =>
   entry(g, { special: "skullIsland", flags: { skulls, pirateCard: !!pirateCard } });
 const bust = (g) => entry(g, { special: "bust", flags: {} });
+const pirateShip = (g, penalty) =>
+  entry(g, { special: "pirateShip", flags: { penalty } });
 
 test("střídání hráčů v pořadí, roundIndex per hráč", () => {
   const g = makeGame();
@@ -60,10 +62,40 @@ test("dva ostrovy lebek ve stejném roundIndex se kumulují", () => {
   assert.deepStrictEqual(st.totals, { p1: -300, p2: -500, p3: -800 });
 });
 
-test("definice: speciály jsou jen Ostrov lebek a Vybouchnutí (Pirátská loď zrušena)", () => {
-  assert.deepStrictEqual(def.specialMoves.map((m) => m.id), ["skullIsland", "bust"]);
-  assert.deepStrictEqual(Object.keys(def.flagMeta), ["skullIsland", "bust"],
-    "vlajky v tabulce: žádný skullVictim (☠️➖) ani shipFail (⚓)");
+test("definice: speciály Výbuch, Pirátská loď, Ostrov lebek — v tomto pořadí", () => {
+  assert.deepStrictEqual(def.specialMoves.map((m) => m.id),
+    ["bust", "pirateShip", "skullIsland"]);
+  assert.deepStrictEqual(def.specialMoves.map((m) => m.label),
+    ["Výbuch", "Pirátská loď", "Ostrov lebek"]);
+  assert.deepStrictEqual(Object.keys(def.flagMeta).sort(),
+    ["bust", "pirateShip", "skullIsland"], "všechny tři speciály mají vlajku v tabulce");
+});
+
+test("pirátská loď: penalizace volbou z −300/−500/−1000", () => {
+  const ship = def.specialMoves.find((m) => m.id === "pirateShip");
+  const penalty = ship.params.find((p) => p.id === "penalty");
+  assert.strictEqual(penalty.type, "choice");
+  assert.deepStrictEqual(penalty.options.map((o) => o.value), [300, 500, 1000]);
+  assert.deepStrictEqual(penalty.options.map((o) => o.label), ["−300", "−500", "−1000"],
+    "popisky s typografickým minusem U+2212");
+});
+
+test("ostrov lebek: počet lebek volbou 4–10 (8 kostek + až 2 lebky z karty)", () => {
+  const island = def.specialMoves.find((m) => m.id === "skullIsland");
+  const skulls = island.params.find((p) => p.id === "skulls");
+  assert.strictEqual(skulls.type, "choice");
+  assert.deepStrictEqual(skulls.options.map((o) => o.value), [4, 5, 6, 7, 8, 9, 10]);
+  assert.strictEqual(island.params.find((p) => p.id === "pirateCard").type, "bool");
+});
+
+test("pirátská loď (neúspěch): pachatel −penalizace, ostatních se netýká, tah se počítá", () => {
+  const g = makeGame();
+  turn(g, 300);                        // p1
+  pirateShip(g, 500);                  // p2
+  const st = Engine.derive(g, def);
+  assert.deepStrictEqual(st.totals, { p1: 300, p2: -500, p3: 0 });
+  assert.ok(st.rounds[0].flags.p2.includes("pirateShip"), "pachatel nese vlajku 🚢");
+  assert.strictEqual(st.next.playerId, "p3", "rotace pokračuje dalším hráčem");
 });
 
 test("vybouchnutí: 0 bodů, tah se počítá a hraje další hráč", () => {
@@ -189,10 +221,10 @@ test("defenderReroll vypnutý (default): žádná obrana", () => {
   assert.deepStrictEqual(st.winnerIds, ["p2"]);
 });
 
-test("validateInput: násobky 100, zápor i nula OK", () => {
+test("validateInput: nezáporné násobky 100 (zápory řeší režim Pirátská loď)", () => {
   assert.strictEqual(def.validateInput(600, {}), null);
-  assert.strictEqual(def.validateInput(-200, {}), null);
   assert.strictEqual(def.validateInput(0, {}), null);
+  assert.ok(typeof def.validateInput(-200, {}) === "string");
   assert.ok(typeof def.validateInput(250, {}) === "string");
   assert.ok(typeof def.validateInput(1.5, {}) === "string");
 });

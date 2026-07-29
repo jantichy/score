@@ -77,12 +77,12 @@ Nastavují se při zakládání hry (default = tučně). Seznam se bude průbě�
 
 - **Vstupní model:** jeden hráč po druhém (`perPlayerSequential`) — appka vyzývá „teď hraje X, zadej jeho výsledek".
 - **Nastavení hry:** při zakládání se volí **cílové skóre** (5000 / 6000 / 8000 / vlastní; default 6000).
-- **Za záznam** se zapisuje hodnota jednoho hráče v jednom kole (celé číslo, **násobek 100**, může být **záporná**).
-- **Speciální tlačítka** (appka aplikuje efekt přes hráče):
-  - **Ostrov lebek** — zadá se počet lebek N (a zda má hráč kartu Pirát → ×2): aktuální hráč 0, **každému ostatnímu −100×N** (resp. −200×N).
-  - **Pirátská loď (neúspěch)** — zadá se penalizace z karty: aktuální hráč za kolo **−penalizace**.
+- **Za záznam** se zapisuje hodnota jednoho hráče v jednom kole (celé číslo, **nezáporný násobek 100** — zápory vznikají jen režimy Pirátská loď a Ostrov lebek).
+- **Režimy zápisu** (záložky v panelu, v pořadí): **Běžná hra · Výbuch · Pirátská loď · Ostrov lebek**.
+  - **Běžná hra** — číselný vstup, rychlá tlačítka +100/+200/+500/+1000 a tlačítko **0** (vynuluje zadání).
+  - **Výbuch** (tři lebky) — bez vstupu, hráč dostává **0 bodů**, tah se počítá.
+  - **Pirátská loď (neúspěch)** — eviduje se jen nesplněný počet šavlí: volba penalizace tlačítky **−300 / −500 / −1000** (hodnoty z karet), aktuální hráč za kolo **−penalizace**.
+  - **Ostrov lebek** — počet lebek se vybírá tlačítky **4–10** (na Ostrov se vstupuje od 4 lebek; maximum 10 = 8 kostek + až 2 lebky z karty) + zaškrtávátko karta Pirát (→ ×2): aktuální hráč 0, **každému ostatnímu −100×N** (resp. −200×N).
 - **Appka počítá/hlídá automaticky:** průběžné součty, detekci konce hry včetně **rozhodujícího kola** a návratu pod hranici (viz „Konec hry"), vyhodnocení vítěze.
 - **Mobilní vstup:** numerická klávesnice; rychlá tlačítka pro násobky 100.
-- **Vizuálně odlišit:** Ostrov lebek, neúspěšnou Pirátskou loď, záporné hodnoty.
-
-> **K doplnění (Honza), volitelné:** konkrétní hodnoty penalizací na jednotlivých kartách Pirátská loď (appka je stejně bere jako zadávané číslo).
+- **Vizuálně odlišit:** Ostrov lebek (☠️), Výbuch (💥), neúspěšnou Pirátskou loď (🚢), záporné hodnoty.
