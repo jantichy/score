@@ -53,7 +53,8 @@ Jako první získat **cílové skóre** (výchozí **6000 bodů**; lze nastavit 
 
 - Jakmile první hráč dosáhne **cílového skóre (≥ cíl)**, spustí se **rozhodující kolo**: **všichni ostatní** hráči odehrají **ještě jeden poslední tah**.
 - Po rozhodujícím kole vyhrává hráč s **nejvyšším** skóre (musí být ≥ cíl).
-- Pokud po rozhodujícím kole **nikdo** nemá ≥ cíl (vedoucího někdo stáhl Ostrovem lebek pod hranici), hra **pokračuje** dál a **další** hráč, který dosáhne ≥ cíl, **automaticky vyhrává** (už bez rozhodujícího kola). Stejně se appka zachová i po **obranném hodu** (volitelná varianta `defenderReroll`) — stáhne-li obranný Ostrov lebek všechny hráče pod cíl, hra pokračuje stejně jako po neúspěšném rozhodujícím kole.
+- **Poslední výprava přehozeného vítěze** (varianta `defenderReroll`, dle oficiálních pravidel Albi — foto `rules/Ukončení hry.jpeg`): jestliže někdo během závěrečných výprav dosáhne vyššího skóre než hráč, který cíle dosáhl první, smí se přehozený hráč vydat ještě na jednu poslední výpravu.
+- Pokud po rozhodujícím kole **nikdo** nemá ≥ cíl (vedoucího někdo stáhl Ostrovem lebek pod hranici), hra **pokračuje** dál a **další** hráč, který dosáhne ≥ cíl, **automaticky vyhrává** (už bez rozhodujícího kola). Stejně se appka zachová i po **poslední výpravě přehozeného vítěze** — stáhne-li její Ostrov lebek všechny hráče pod cíl, hra pokračuje stejně jako po neúspěšném rozhodujícím kole.
 - Řádky (kola) **přibývají** s každým odehraným kolem.
 - **Pirátská magie** (vzácné): kombinace 9 stejných kostek → hráč **automaticky vyhrává** hru. (V MVP appka neřeší automaticky; při výskytu lze hru ukončit ručně.)
 
@@ -61,7 +62,7 @@ Jako první získat **cílové skóre** (výchozí **6000 bodů**; lze nastavit 
 
 | Sporný bod | Varianty | **Rozhodnuto** |
 |---|---|---|
-| Konec hry / „obhajoba vedoucího" | oficiální (ostatní dohrají poslední tah, bez obrany) vs domácí (vedoucí dostane obranný hod) | **oficiální — bez obranného hodu** |
+| Konec hry / poslední výprava přehozeného vítěze | s poslední výpravou (oficiální pravidla Albi, viz foto `rules/Ukončení hry.jpeg`) vs bez ní | **konfigurovatelné (varianta `defenderReroll`), výchozí bez výpravy** |
 | Cílové skóre | pevně 6000 vs volitelně 5000/8000 | **konfigurovatelné, výchozí 6000** |
 
 ## Konfigurovatelné varianty pravidel
@@ -71,7 +72,7 @@ Nastavují se při zakládání hry (default = tučně). Seznam se bude průbě�
 | Varianta | Možnosti | Default |
 |---|---|---|
 | `targetScore` — cílové skóre | 5000 / 6000 / 8000 / vlastní | **6000** |
-| `defenderReroll` — obranný hod přehozeného vedoucího | ne (oficiální) / ano (domácí) | **ne** |
+| `defenderReroll` — poslední výprava přehozeného vítěze | smí házet ještě jednou (dle pravidel Albi) / už neháže | **už neháže** |
 
 ## Co appka dělá
 
