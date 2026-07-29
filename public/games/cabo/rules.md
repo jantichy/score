@@ -71,7 +71,7 @@ Tyto body se v různých skupinách hrají jinak; v appce jsou to **volitelné v
 | `caboPenalty` — penalizace za neúspěšné „Kabo!" | 5 / 10 | **10** |
 | `zeroInRound` — kdo dostává v kole 0 | jen úspěšný volající (A) / nejnižší hráč (B) | **A** |
 | `endRule` — konec hry | ≥ 100 s výjimkou pro první přesnou 100 / striktně > 100 | **≥ 100 s výjimkou** |
-| `scoreEntry` — zadávání bodů | ručně (appka jen značí volání) / surové součty (appka dopočítá 0 i penalizaci) | **ručně** |
+| `scoreEntry` — zadávání bodů | ručně (appka jen značí volání) / surové součty (appka dopočítá 0 i penalizaci) | **surové součty** |
 
 ## Co appka dělá
 

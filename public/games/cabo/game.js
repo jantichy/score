@@ -55,10 +55,10 @@
         label: "Zadávání bodů",
         type: "enum",
         options: [
-          { value: "manual", label: "Ručně (finální čísla)" },
           { value: "raw", label: "Surové součty (appka dopočítá)" },
+          { value: "manual", label: "Ručně (finální čísla)" },
         ],
-        default: "manual",
+        default: "raw",
       },
     ],
     validateInput(value) {

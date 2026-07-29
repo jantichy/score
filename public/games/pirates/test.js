@@ -141,7 +141,7 @@ test("dosažení cíle spustí rozhodující kolo pro ostatní", () => {
 });
 
 test("v rozhodujícím kole lze triggera přeskočit — vyhrává nejvyšší ≥ cíl", () => {
-  const g = makeGame({ targetScore: 1000 });
+  const g = makeGame({ targetScore: 1000, defenderReroll: false });
   turn(g, 1000); turn(g, 1200); turn(g, 0);
   const st = Engine.derive(g, def);
   assert.strictEqual(st.finished, true);
@@ -222,8 +222,17 @@ test("defenderReroll: remíza na vrcholu obranu nespouští", () => {
   assert.deepStrictEqual(st.winnerIds, ["p1", "p2"]);
 });
 
-test("defenderReroll vypnutý (default): žádná obrana", () => {
+test("defenderReroll zapnutý (default dle Albi): přehozený vítěz háže ještě jednou", () => {
   const g = makeGame({ targetScore: 1000 }, ["A", "B"]);
+  turn(g, 1000); turn(g, 1500);        // p2 přehodil triggera
+  const st = Engine.derive(g, def);
+  assert.strictEqual(st.finished, false, "hra nekončí — přehozený má poslední výpravu");
+  assert.deepStrictEqual([st.next.playerId, st.next.note],
+    ["p1", "Poslední výprava přehozeného vítěze!"]);
+});
+
+test("defenderReroll vypnutý: žádná další výprava, vyhrává rovnou nejvyšší", () => {
+  const g = makeGame({ targetScore: 1000, defenderReroll: false }, ["A", "B"]);
   turn(g, 1000); turn(g, 1500);
   const st = Engine.derive(g, def);
   assert.strictEqual(st.finished, true);
@@ -236,7 +245,7 @@ test("varianta defenderReroll: plnohodnotná varianta s nadpisem, ne „domácí
   assert.deepStrictEqual(v.options.map((o) => o.value), [true, false]);
   assert.ok(!/domácí/i.test([v.label, v.help, ...v.options.map((o) => o.label)].join(" ")),
     "poslední výprava přehozeného vítěze je oficiální pravidlo Albi (rules/Ukončení hry.jpeg)");
-  assert.strictEqual(v.default, false);
+  assert.strictEqual(v.default, true, "výchozí dle pravidel Albi: smí házet ještě jednou");
 });
 
 test("validateInput: nezáporné násobky 100 (zápory řeší režim Pirátská loď)", () => {
