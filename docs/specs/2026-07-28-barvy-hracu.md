@@ -33,8 +33,9 @@ skončení hry se barvy hráčů nikde neuplatňují — tam platí výsledkové
 
 Barva vždy jako plocha/linka, nikdy barva textu (kontrast, WEB.md).
 
-1. **Graf:** sloupec hráče v jeho barvě. Signální přebarvení při překročení
-   hranice (win/lost) zůstává nadřazené.
+1. **Graf:** sloupec hráče v jeho barvě. Překročení hraniční čáry (oběma
+   směry) se signalizuje **sytějším odstínem téže barvy** (`strong` v paletě)
+   — dřívější signální zelená/červená byla zrušena (rozhodnutí 2026-07-29).
 2. **Sekvenční hry (Piráti):** banner „Teď hraje: …" dostane levý proužek
    + jemné podbarvení v barvě hráče na tahu.
 3. **Hlavička tabulky:** jméno hráče podtržené jeho barvou (3px linka).

@@ -53,6 +53,9 @@
     }
     // zvýraznění příštího zápisu (jen pro sekvenční tahy, viz Task 12)
     const nextTurn = state.next && state.next.type === "turn" ? state.next : null;
+    // právě hrané kolo (jen hry s celými koly) — u pevného počtu kol jeho
+    // řádek existuje a značí se; bez pevného počtu se prázdný řádek nekreslí.
+    const nextRound = state.next && state.next.type === "round" ? state.next : null;
 
     const headerRow = el("tr", null,
       el("th", { class: "col-round" }),
@@ -67,9 +70,11 @@
         }, p.name);
       }));
 
+    // U sekvenčních tahů se kreslí i řádek právě hraného kola (zatím prázdný,
+    // jen se zvýrazněnou buňkou hráče na tahu) — hned od úplně prvního tahu.
     const rowCount = state.roundsPlanned !== null
       ? state.roundsPlanned
-      : state.rounds.length;
+      : Math.max(state.rounds.length, nextTurn ? nextTurn.roundIndex + 1 : 0);
 
     const bodyRows = [];
     for (let i = 0; i < rowCount; i++) {
@@ -91,8 +96,9 @@
         const cls = [isNeg ? "neg" : null, isNextCell ? "next-cell" : null].filter(Boolean).join(" ") || null;
         return el("td", { class: cls, style: nextStyle }, valueText, adjust, ...flags);
       });
-      bodyRows.push(el("tr", null,
-        el("td", { class: "col-round" }, String(i + 1)), ...cells));
+      bodyRows.push(el("tr", {
+        class: nextRound && i === nextRound.roundIndex ? "current-round" : null,
+      }, el("td", { class: "col-round" }, String(i + 1)), ...cells));
     }
 
     return el("section", { class: "score-table" },
@@ -136,15 +142,17 @@
       if (badge) {
         if (badge.tone) barCls += " sb-" + badge.tone;
         if (badge.tone === "busted") totalCls += " sb-total-busted";
-      } else if (scale && v >= scale.max) {
-        barCls += scale.kind === "reach" ? " sb-win" : " sb-lost";
-        totalCls += scale.kind === "reach" ? " sb-total-win" : " sb-total-lost";
       }
       const barTop = v >= 0 ? (top - v) * px : zeroY;
       const barH = Math.max(Math.abs(v) * px, 2);
-      // Během hry (bez badges) nese sloupec barvu hráče přes --pc; signální
-      // třídy překročení hranice (sb-win/sb-lost) ji v CSS přebíjejí.
-      const colorStyle = badges ? "" : ";--pc:" + p.color;
+      // Během hry (bez badges) nese sloupec barvu hráče přes --pc. Překročení
+      // hraniční čáry (oběma směry) nepřebarvuje na zelenou/červenou — sloupec
+      // jen přepne do výrazně sytějšího odstínu téže barvy, aby mezi pastely
+      // okolo křičel.
+      const over = !badges && scale && v >= scale.max;
+      const colorStyle = badges
+        ? ""
+        : ";--pc:" + (over ? g.Score.dom.strongColor(p.color) : p.color);
       nameCells.push(el("span", { class: "sb-name" }, p.name));
       barCells.push(el("div", { class: "sb-cell" },
         el("div", {
@@ -317,7 +325,8 @@
             set: (v) => { field.checked = !!v; },
             focus: () => field.focus(),
           };
-          return el("label", { class: "param-row" }, param.label, field);
+          // Checkbox inline PŘED popiskem (checkbox – mezera – text).
+          return el("label", { class: "param-row param-row-bool" }, field, " " + param.label);
         }
         if (param.type === "choice") {
           // Výběr z pevné sady hodnot: segmentovaná tlačítka, max jedno aktivní.
@@ -354,10 +363,12 @@
         return el("label", { class: "param-row" }, param.label, field);
       });
 
+      // Jednotný text pro sekvenční zápis ve všech režimech — o aktivním
+      // režimu informuje zmáčknutá záložka nahoře.
       const submitBtn = el("button", {
         type: "button", class: "btn-action", style: "--accent:" + def.accentColor,
         onclick: () => onConfirmSpecial(move),
-      }, "Zapsat: " + move.label);
+      }, "Zapsat tah");
 
       specialArea.append(...rows, specialErrorEl, submitBtn);
     }
@@ -859,10 +870,13 @@
           ranking: game.frozenResult.ranking,
         }
         : state;
-      // Tabulka kol se nekreslí, dokud není zapsané ani jedno kolo — VÝJIMKOU
-      // jsou hry s předem známým počtem kol (roundsPlanned, např. SCOUT):
-      // tam se od začátku vypisuje celá tabulka s očíslovanými prázdnými řádky.
-      const table = tableState.rounds.length > 0 || tableState.roundsPlanned !== null
+      // Tabulka kol se kreslí hned od začátku u her s předem známým počtem kol
+      // (roundsPlanned, např. SCOUT — celá s očíslovanými prázdnými řádky)
+      // a u sekvenčních tahů (Piráti — první prázdný řádek se zvýrazněnou
+      // buňkou hráče na tahu). Hry zapisující celá kola bez pevného počtu
+      // (KABO) tabulku ukážou až po prvním zapsaném kole.
+      const table = tableState.rounds.length > 0 || tableState.roundsPlanned !== null ||
+        (tableState.next && tableState.next.type === "turn")
         ? renderTable(tableState, game, def, !isFinished)
         : null;
 

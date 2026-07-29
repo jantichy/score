@@ -115,8 +115,11 @@ test("UI režim Ostrov lebek: lebky 4–10 tlačítky, karta Pirát, žádný te
   const inputs = special.querySelectorAll("input");
   assert.strictEqual(inputs.length, 1, "jediný input je checkbox karty Pirát");
   assert.strictEqual(inputs[0].getAttribute("type"), "checkbox");
+  const boolRow = inputs[0].closest(".param-row");
+  assert.strictEqual(boolRow.children[0], inputs[0],
+    "checkbox je inline PŘED textem popisku, ne odstrčený na druhé straně");
+  assert.ok(boolRow.textContent.includes("Karta Pirát"));
   const btnTexts = texts(c.querySelector(".input-panel").querySelectorAll("button"));
-  assert.ok(btnTexts.includes("Zapsat: Ostrov lebek"));
   assert.ok(!btnTexts.includes("Zrušit"), "tlačítko Zrušit už neexistuje");
   // výběr 6 lebek → zapíše special s flags.skulls = 6
   skullChoices[2].click();
@@ -137,7 +140,8 @@ test("UI režim Výbuch: žádný input, jen Zapsat; zapíše special bust", asy
   assert.strictEqual(special.querySelectorAll("input").length, 0,
     "režim Výbuch nemá vůbec žádný input");
   const submit = special.querySelector("button");
-  assert.strictEqual(submit.textContent, "Zapsat: Výbuch");
+  assert.strictEqual(submit.textContent, "Zapsat tah",
+    "sekvenční zápis má jednotné tlačítko Zapsat tah ve všech režimech");
   submit.click();
   await tick(); await tick();
   assert.strictEqual(game.log.length, 1);
@@ -155,6 +159,8 @@ test("UI režim Pirátská loď: jen tlačítka −300/−500/−1000 a Zapsat",
     "typografický minus U+2212, ne spojovník");
   assert.strictEqual(special.querySelectorAll("input").length, 0,
     "žádný textový input ani checkbox");
+  assert.strictEqual(special.querySelector(".btn-action").textContent, "Zapsat tah",
+    "jednotný text tlačítka pro zápis tahu");
   choices[1].click();
   special.querySelector(".btn-action").click();
   await tick(); await tick();
@@ -212,11 +218,63 @@ test("UI undo předvyplní vrácený tah do inputu", async () => {
 
 // === Tabulka kol ===
 
-test("UI tabulka se nekreslí, dokud není zapsané ani jedno kolo", async () => {
-  const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
+test("UI KABO (celá kola, bez pevného počtu): tabulka až po prvním zapsaném kole", async () => {
+  const game = newStoredGame(caboDef, ["Marky", "Honza"]);
   const c = await renderGameScreen(game);
   assert.strictEqual(c.querySelector("table"), null, "žádná tabulka, jen graf");
   assert.ok(c.querySelector(".scoreboard"), "graf tam je");
+  Engine.addEntry(game, game.players.map((p, i) => ({
+    playerId: p.id, roundIndex: 0, value: [5, 10][i], special: null,
+    flags: i === 0 ? { cabo: true } : {},
+  })), 2);
+  const c2 = await renderGameScreen(game);
+  const rows = c2.querySelector("tbody").querySelectorAll("tr");
+  assert.strictEqual(rows.length, 1, "po prvním kole jediný řádek, žádný prázdný navíc");
+  assert.strictEqual(c2.querySelector("tr.current-round"), null,
+    "bez pevného počtu kol se aktuální řádek nevyznačuje");
+});
+
+test("UI Piráti (sekvenční): tabulka hned od začátku s prázdným řádkem a buňkou hráče na tahu", async () => {
+  const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
+  const c = await renderGameScreen(game);
+  const tbody = c.querySelector("tbody");
+  assert.ok(tbody, "tabulka je vykreslená ještě před prvním tahem");
+  const rows = tbody.querySelectorAll("tr");
+  assert.strictEqual(rows.length, 1, "první (zatím prázdný) řádek");
+  const cells = rows[0].querySelectorAll("td");
+  assert.strictEqual(cells[0].textContent, "1");
+  assert.deepStrictEqual(texts(cells).slice(1), ["", ""], "buňky hráčů jsou prázdné");
+  assert.ok(cells[1].classList.contains("next-cell"), "buňka prvního hráče je zvýrazněná");
+  assert.ok(cells[1].getAttribute("style").includes("--pc:" + PALETTE[0].value),
+    "…a nese barvu hráče na tahu");
+});
+
+test("UI Piráti: po dohraném kole se objeví prázdný řádek dalšího kola se zvýrazněním", async () => {
+  const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
+  addTurn(game, piratesDef, { value: 300 });   // Marky
+  addTurn(game, piratesDef, { value: 500 });   // Honza
+  const c = await renderGameScreen(game);
+  const rows = c.querySelector("tbody").querySelectorAll("tr");
+  assert.strictEqual(rows.length, 2, "řádek odehraného kola + prázdný řádek právě hraného");
+  const cells = rows[1].querySelectorAll("td");
+  assert.deepStrictEqual(texts(cells).slice(1), ["", ""]);
+  assert.ok(cells[1].classList.contains("next-cell"), "na tahu je zase první hráč");
+});
+
+test("UI SCOUT (pevný počet kol): právě hrané kolo je vyznačené na řádku", async () => {
+  const scoutDef = Games.get("scout");
+  const game = newStoredGame(scoutDef, ["A", "B", "C"]);
+  const c = await renderGameScreen(game);
+  const rows = c.querySelector("tbody").querySelectorAll("tr");
+  assert.ok(rows[0].classList.contains("current-round"), "hraje se 1. kolo");
+  assert.ok(!rows[1].classList.contains("current-round"));
+  Engine.addEntry(game, game.players.map((p, i) => ({
+    playerId: p.id, roundIndex: 0, value: [1, 2, 3][i], special: null, flags: {},
+  })), 2);
+  const c2 = await renderGameScreen(game);
+  const rows2 = c2.querySelector("tbody").querySelectorAll("tr");
+  assert.ok(!rows2[0].classList.contains("current-round"), "1. kolo už je odehrané");
+  assert.ok(rows2[1].classList.contains("current-round"), "hraje se 2. kolo");
 });
 
 test("UI SCOUT (pevný počet kol): celá tabulka s očíslovanými řádky od začátku", async () => {
@@ -469,6 +527,25 @@ test("UI graf: sloupce nesou barvu hráče (--pc) během hry", async () => {
   const bars = c.querySelectorAll(".sb-bar");
   assert.ok(bars[0].getAttribute("style").includes("--pc:" + PALETTE[5].value));
   assert.ok(bars[1].getAttribute("style").includes("--pc:" + PALETTE[0].value));
+});
+
+test("UI graf: překročení hranice = sytější odstín barvy hráče, žádná zelená/červená", async () => {
+  const game = newStoredGame(piratesDef, [
+    { name: "Marky", color: PALETTE[5].value },
+    { name: "Honza", color: PALETTE[0].value },
+  ], { targetScore: 1000 });
+  addTurn(game, piratesDef, { value: 1000 }); // Marky přes cíl, hra běží (rozhodující kolo)
+  const c = await renderGameScreen(game);
+  const bars = c.querySelectorAll(".sb-bar");
+  assert.ok(!bars[0].className.includes("sb-win") && !bars[0].className.includes("sb-lost"),
+    "signální zelená/červená už neexistuje");
+  assert.ok(bars[0].getAttribute("style").includes("--pc:" + PALETTE[5].strong),
+    "sloupec přes hranici má sytější odstín své barvy");
+  assert.ok(bars[1].getAttribute("style").includes("--pc:" + PALETTE[0].value),
+    "sloupec pod hranicí zůstává pastelový");
+  const totals = c.querySelectorAll(".sb-total");
+  assert.ok(!totals[0].className.includes("sb-total-win"),
+    "ani součet se nebarví zeleně");
 });
 
 test("UI graf i tabulka: po dohrání se barvy hráčů nikde nekreslí", async () => {
