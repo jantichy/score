@@ -62,7 +62,7 @@ Jako první získat **cílové skóre** (výchozí **6000 bodů**; lze nastavit 
 
 | Sporný bod | Varianty | **Rozhodnuto** |
 |---|---|---|
-| Konec hry / poslední výprava přehozeného vítěze | s poslední výpravou (oficiální pravidla Albi, viz foto `rules/Ukončení hry.jpeg`) vs bez ní | **konfigurovatelné (varianta `defenderReroll`), výchozí bez výpravy** |
+| Konec hry / poslední výprava přehozeného vítěze | s poslední výpravou (oficiální pravidla Albi, viz foto `rules/Ukončení hry.jpeg`) vs bez ní | **konfigurovatelné (varianta `defenderReroll`), výchozí s výpravou** |
 | Cílové skóre | pevně 6000 vs volitelně 5000/8000 | **konfigurovatelné, výchozí 6000** |
 
 ## Konfigurovatelné varianty pravidel
@@ -72,7 +72,7 @@ Nastavují se při zakládání hry (default = tučně). Seznam se bude průbě�
 | Varianta | Možnosti | Default |
 |---|---|---|
 | `targetScore` — cílové skóre | 5000 / 6000 / 8000 / vlastní | **6000** |
-| `defenderReroll` — poslední výprava přehozeného vítěze | smí házet ještě jednou (dle pravidel Albi) / už neháže | **už neháže** |
+| `defenderReroll` — poslední výprava přehozeného vítěze | smí házet ještě jednou (dle pravidel Albi) / už neháže | **smí házet ještě jednou** |
 
 ## Co appka dělá
 

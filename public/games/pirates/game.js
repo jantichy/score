@@ -144,7 +144,7 @@
           { value: true, label: "Smí házet ještě jednou" },
           { value: false, label: "Už neháže" },
         ],
-        default: false,
+        default: true,
       },
     ],
     validateInput(value) {

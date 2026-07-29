@@ -41,8 +41,14 @@ test("ikony dle dohody: jednotný tlampač 📢 pro Kabo, kamikaze 💣, oživen
   assert.ok(def.roundFlags[0].required, "volající Kaba je povinný");
 });
 
+test("zadávání bodů: výchozí surové součty, ruční zápis až jako druhá volba", () => {
+  const v = def.variants.find((x) => x.id === "scoreEntry");
+  assert.deepStrictEqual(v.options.map((o) => o.value), ["raw", "manual"]);
+  assert.strictEqual(v.default, "raw");
+});
+
 test("manual: skóre = zapsaná čísla, cabo jen flag", () => {
-  const g = makeGame();
+  const g = makeGame({ scoreEntry: "manual" });
   caboRound(g, [{ value: 0, cabo: true }, { value: 7 }, { value: 12 }]);
   const st = Engine.derive(g, def);
   assert.deepStrictEqual(st.totals, { p1: 0, p2: 7, p3: 12 });
