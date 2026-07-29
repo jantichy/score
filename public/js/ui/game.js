@@ -43,16 +43,29 @@
     return null;
   }
 
-  function renderTable(state, game, def) {
+  // showColors: barvy hráčů se kreslí jen během hry — po dohrání platí
+  // výsledkové barvy (viz docs/specs/2026-07-28-barvy-hracu.md).
+  function renderTable(state, game, def, showColors) {
     const playerIds = game.players.map((p) => p.id);
+    const colorOf = {};
+    if (showColors) {
+      for (const p of game.players) colorOf[p.id] = p.color;
+    }
     // zvýraznění příštího zápisu (jen pro sekvenční tahy, viz Task 12)
     const nextTurn = state.next && state.next.type === "turn" ? state.next : null;
 
     const headerRow = el("tr", null,
       el("th", { class: "col-round" }),
-      ...game.players.map((p) => el("th", {
-        class: nextTurn && p.id === nextTurn.playerId ? "next-player" : null,
-      }, p.name)));
+      ...game.players.map((p) => {
+        const cls = [
+          nextTurn && p.id === nextTurn.playerId ? "next-player" : null,
+          colorOf[p.id] ? "pc" : null,
+        ].filter(Boolean).join(" ") || null;
+        return el("th", {
+          class: cls,
+          style: colorOf[p.id] ? "--pc:" + colorOf[p.id] : null,
+        }, p.name);
+      }));
 
     const rowCount = state.roundsPlanned !== null
       ? state.roundsPlanned
@@ -63,7 +76,8 @@
       const round = state.rounds[i];
       const cells = playerIds.map((pid) => {
         const isNextCell = nextTurn && nextTurn.roundIndex === i && nextTurn.playerId === pid;
-        if (!round) return el("td", { class: isNextCell ? "next-cell" : null });
+        const nextStyle = isNextCell && colorOf[pid] ? "--pc:" + colorOf[pid] : null;
+        if (!round) return el("td", { class: isNextCell ? "next-cell" : null, style: nextStyle });
         const value = round.scores[pid];
         const flags = flagCell(def, pid, round.flags);
         // rozpis od pluginu ("2+10", "+50", "800-600") má přednost před sečteným
@@ -75,7 +89,7 @@
         const adjust = adjustSuffix(pid, round.roundIndex, state.totalEvents);
         const isNeg = typeof value === "number" && value < 0;
         const cls = [isNeg ? "neg" : null, isNextCell ? "next-cell" : null].filter(Boolean).join(" ") || null;
-        return el("td", { class: cls }, valueText, adjust, ...flags);
+        return el("td", { class: cls, style: nextStyle }, valueText, adjust, ...flags);
       });
       bodyRows.push(el("tr", null,
         el("td", { class: "col-round" }, String(i + 1)), ...cells));
@@ -128,11 +142,14 @@
       }
       const barTop = v >= 0 ? (top - v) * px : zeroY;
       const barH = Math.max(Math.abs(v) * px, 2);
+      // Během hry (bez badges) nese sloupec barvu hráče přes --pc; signální
+      // třídy překročení hranice (sb-win/sb-lost) ji v CSS přebíjejí.
+      const colorStyle = badges ? "" : ";--pc:" + p.color;
       nameCells.push(el("span", { class: "sb-name" }, p.name));
       barCells.push(el("div", { class: "sb-cell" },
         el("div", {
           class: barCls,
-          style: "top:" + barTop.toFixed(1) + "px;height:" + barH.toFixed(1) + "px",
+          style: "top:" + barTop.toFixed(1) + "px;height:" + barH.toFixed(1) + "px" + colorStyle,
         })));
       totalCells.push(el("span", { class: totalCls }, g.Score.dom.fmtScore(v)));
     }
@@ -218,6 +235,11 @@
       class: "score-input score-input-wide",
     });
     const signBtn = allowsNegative ? signToggleBtn(input) : null;
+    // Tlačítko „0" (def.quickZero): vynuluje rozklikané rychlé přičítání.
+    const zeroBtn = def.quickZero ? el("button", {
+      type: "button", class: "btn-quick", title: "Vynulovat zadání",
+      onclick: () => { input.value = "0"; input.focus(); },
+    }, "0") : null;
 
     // Rychlá přičítací tlačítka deklaruje hra (Piráti: násobky 100).
     const quickAmounts = def.quickAmounts || [];
@@ -241,8 +263,8 @@
     // formulář aktivního režimu, nic se nedisabluje.
     const normalForm = el("div", { class: "mode-form" },
       el("div", { class: "input-controls" }, input),
-      (signBtn || quickBtns.length)
-        ? el("div", { class: "input-controls" }, signBtn, ...quickBtns)
+      (signBtn || zeroBtn || quickBtns.length)
+        ? el("div", { class: "input-controls" }, signBtn, zeroBtn, ...quickBtns)
         : null,
       errorEl,
       confirmBtn);
@@ -284,14 +306,51 @@
 
       if (!move) return;
 
+      // paramInputs drží jednotné rozhraní {param, get, set, focus} — potvrzení
+      // i předvyplnění po undo tak nemusí rozlišovat druh pole.
       const rows = (move.params || []).map((param) => {
-        let field;
         if (param.type === "bool") {
-          field = el("input", { type: "checkbox" });
-        } else {
-          field = el("input", { type: "text", inputmode: "numeric", autocomplete: "off", class: "score-input" });
+          const field = el("input", { type: "checkbox" });
+          paramInputs[param.id] = {
+            param,
+            get: () => !!field.checked,
+            set: (v) => { field.checked = !!v; },
+            focus: () => field.focus(),
+          };
+          return el("label", { class: "param-row" }, param.label, field);
         }
-        paramInputs[param.id] = { field, param };
+        if (param.type === "choice") {
+          // Výběr z pevné sady hodnot: segmentovaná tlačítka, max jedno aktivní.
+          // Bez výběru se zápis odmítne (viz onConfirmSpecial).
+          let selected;
+          const setSelected = (v) => {
+            selected = v;
+            btns.forEach((b, j) => b.classList.toggle("active", param.options[j].value === v));
+          };
+          const btns = (param.options || []).map((opt) => el("button", {
+            type: "button", class: "btn-special",
+            onclick: () => setSelected(opt.value),
+          }, opt.label));
+          paramInputs[param.id] = {
+            param,
+            get: () => selected,
+            set: setSelected,
+            focus: () => { if (btns[0]) btns[0].focus(); },
+          };
+          return el("div", { class: "param-row param-row-choice" },
+            param.label ? el("span", { class: "param-label" }, param.label) : null,
+            el("div", { class: "choice-group" }, ...btns));
+        }
+        const field = el("input", {
+          type: "text", inputmode: "numeric", autocomplete: "off", class: "score-input",
+        });
+        paramInputs[param.id] = {
+          param,
+          get: () => field.value,
+          set: (v) => { field.value = String(v); },
+          focus: () => field.focus(),
+          isText: true,
+        };
         return el("label", { class: "param-row" }, param.label, field);
       });
 
@@ -313,12 +372,22 @@
         const flags = {};
         let firstErrorField = null;
         for (const param of move.params || []) {
-          const { field } = paramInputs[param.id];
+          const field = paramInputs[param.id];
           if (param.type === "bool") {
-            flags[param.id] = !!field.checked;
+            flags[param.id] = field.get();
             continue;
           }
-          const raw = field.value.trim();
+          if (param.type === "choice") {
+            const value = field.get();
+            if (value === undefined) {
+              specialErrorEl.textContent = param.requiredMessage || "Vyber hodnotu.";
+              if (!firstErrorField) firstErrorField = field;
+              continue;
+            }
+            flags[param.id] = value;
+            continue;
+          }
+          const raw = field.get().trim();
           const err = validateSeqParam(param, raw);
           if (err) {
             specialErrorEl.textContent = err;
@@ -345,12 +414,11 @@
     }
 
     // Přepínač režimu nahoře: „Běžná hra" + jeden režim za každý speciální
-    // tah hry (Piráti: Ostrov lebek). Zmáčknutý režim určuje, který formulář
-    // je vykreslený — ten druhý je úplně schovaný.
+    // tah hry v pořadí z def.specialMoves. Zmáčknutý režim určuje, který
+    // formulář je vykreslený — ostatní jsou úplně schované. Záložky jsou bez
+    // ikon a úzké, aby se všechny vešly vedle sebe do jednoho řádku panelu.
     const modes = [{ id: null, label: "Běžná hra", move: null }].concat(
-      specialMoves.map((move) => ({
-        id: move.id, label: (move.icon ? move.icon + " " : "") + move.label, move,
-      })));
+      specialMoves.map((move) => ({ id: move.id, label: move.label, move })));
     const modeBtns = modes.map((mode) => el("button", {
       type: "button", class: "btn-special",
       onclick: () => { setMode(mode.id); if (!mode.id) input.focus(); },
@@ -380,8 +448,8 @@
           for (const param of move.params || []) {
             const entry = paramInputs[param.id];
             if (!entry) continue;
-            if (param.type === "bool") entry.field.checked = !!rec.flags[param.id];
-            else if (rec.flags[param.id] !== undefined) entry.field.value = String(rec.flags[param.id]);
+            if (param.type === "bool") entry.set(!!rec.flags[param.id]);
+            else if (rec.flags[param.id] !== undefined) entry.set(rec.flags[param.id]);
           }
         }
       } else if (rec.value !== null && rec.value !== undefined) {
@@ -394,7 +462,11 @@
     ];
     if (next.note) bannerChildren.push(el("p", { class: "turn-note" }, next.note));
 
-    const banner = el("div", { class: "turn-banner" }, ...bannerChildren);
+    // Barva hráče na tahu podtrhuje celý banner (proužek + jemné podbarvení).
+    const banner = el("div", {
+      class: "turn-banner pc",
+      style: "--pc:" + player.color,
+    }, ...bannerChildren);
     banner.addEventListener("click", () => { if (!normalForm.hidden) input.focus(); });
 
     const panel = el("aside", { class: "input-panel" },
@@ -559,6 +631,7 @@
       // Kliky na tlačítka/input samotný se nechávají být (mají vlastní chování).
       const row = el("div", { class: "input-row" },
         el("span", { class: "input-player-name" },
+          el("span", { class: "pc-dot", style: "--pc:" + p.color, "aria-hidden": "true" }),
           p.name, showStarter ? el("span", { class: "starter-badge" }, " začíná") : null),
         el("div", { class: "input-controls" }, ...controls),
         errorEl);
@@ -790,7 +863,7 @@
       // jsou hry s předem známým počtem kol (roundsPlanned, např. SCOUT):
       // tam se od začátku vypisuje celá tabulka s očíslovanými prázdnými řádky.
       const table = tableState.rounds.length > 0 || tableState.roundsPlanned !== null
-        ? renderTable(tableState, game, def)
+        ? renderTable(tableState, game, def, !isFinished)
         : null;
 
       // Levý sloupec vypadá u rozehrané i dohrané hry stejně: nahoře graf

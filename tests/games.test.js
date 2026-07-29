@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert");
-require("../js/games.js");
+require("../public/js/games.js");
 const { Games } = globalThis.Score;
 
 function makeDef(id) {

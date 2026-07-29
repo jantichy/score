@@ -13,7 +13,10 @@
       rulesVersion: def.rulesVersion,
       schemaVersion: 1,
       status: "in_progress",
-      players: players.map((name, i) => ({ id: "p" + (i + 1), name, order: i })),
+      // Hráč přichází jako objekt {name, color} — jméno i barva jsou syrová
+      // fakta hráče (barvu přiřazuje vždy zakládání hry, viz ui/setup.js).
+      players: players.map((p, i) =>
+        ({ id: "p" + (i + 1), name: p.name, color: p.color, order: i })),
       variants: variants,
       log: [],
       createdAt: now,

@@ -63,6 +63,19 @@
     return String(value).replace(/-/g, "−");
   }
 
+  // Paleta barev hráčů (viz docs/specs/2026-07-28-barvy-hracu.md): pastelové
+  // odstíny s dostatečným rozestupem, vždy jako plocha/linka — nikdy barva textu.
+  const PLAYER_COLORS = [
+    { value: "#f28b82", label: "červená" },
+    { value: "#f8b26a", label: "oranžová" },
+    { value: "#fde293", label: "žlutá" },
+    { value: "#81c995", label: "zelená" },
+    { value: "#7fd8d3", label: "tyrkysová" },
+    { value: "#8ab4f8", label: "modrá" },
+    { value: "#c58af9", label: "fialová" },
+    { value: "#ff9bc4", label: "růžová" },
+  ];
+
   g.Score = g.Score || {};
-  g.Score.dom = { el, clear, pressable, pageHeader, fmtScore };
+  g.Score.dom = { el, clear, pressable, pageHeader, fmtScore, PLAYER_COLORS };
 })(globalThis);

@@ -1,7 +1,7 @@
 "use strict";
 const assert = require("node:assert");
-require("../js/games.js");
-require("../js/engine.js");
+require("../public/js/games.js");
+require("../public/js/engine.js");
 const { Engine, Games } = globalThis.Score;
 
 const TestDef = {
@@ -22,14 +22,26 @@ const TestDef = {
   },
 };
 
+// Hráči jdou do newGame vždy jako objekty {name, color} — barvu přiřazuje
+// zakládání hry, testy enginu ji jen protahují.
+function colored(names) {
+  const palette = ["#f28b82", "#f8b26a", "#fde293", "#81c995"];
+  return names.map((name, i) => ({ name, color: palette[i] }));
+}
 function makeGame(variants) {
-  return Engine.newGame({ def: TestDef, players: ["A", "B"], variants: variants || {}, now: 1000 });
+  return Engine.newGame({ def: TestDef, players: colored(["A", "B"]), variants: variants || {}, now: 1000 });
 }
 function round(game, values, now) {
   const roundIndex = new Set(game.log.map((r) => r.roundIndex)).size;
   Engine.addEntry(game, game.players.map((p, i) =>
     ({ playerId: p.id, roundIndex, value: values[i], special: null, flags: {} })), now || 2000);
 }
+
+test("newGame: hráč nese jméno i barvu jako syrová fakta", () => {
+  const game = makeGame();
+  assert.deepStrictEqual(game.players.map((p) => [p.name, p.color, p.order]),
+    [["A", "#f28b82", 0], ["B", "#f8b26a", 1]]);
+});
 
 test("newGame: tvar záznamu", () => {
   const game = makeGame();

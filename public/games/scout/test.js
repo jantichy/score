@@ -7,7 +7,12 @@ const { Engine, Games } = globalThis.Score;
 const def = Games.get("scout");
 
 function makeGame(names) {
-  return Engine.newGame({ def, players: names, variants: {}, now: 1 });
+  // Hráči jdou do newGame jako objekty {name, color}; pro pravidla je barva nepodstatná.
+  return Engine.newGame({
+    def,
+    players: names.map((name, i) => ({ name, color: "#c" + i })),
+    variants: {}, now: 1,
+  });
 }
 function round(game, values) {
   const roundIndex = new Set(game.log.map((r) => r.roundIndex)).size;

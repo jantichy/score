@@ -14,7 +14,10 @@
         if (id !== rec.playerId) totals[id] -= penalty;
       }
     } else if (rec.special === "bust") {
-      // Vybouchnutí (tři lebky): 0 bodů, tah se ale počítá.
+      // Výbuch (tři lebky): 0 bodů, tah se ale počítá.
+    } else if (rec.special === "pirateShip") {
+      // Pirátská loď (nesplněný počet šavlí): pachatel ztrácí penalizaci z karty.
+      totals[rec.playerId] -= rec.flags.penalty;
     } else {
       totals[rec.playerId] += rec.value;
     }
@@ -105,10 +108,13 @@
     rankingStyle: "winnerOnly",
     // Rychlá přičítací tlačítka vstupu (body jsou násobky 100).
     quickAmounts: [100, 200, 500, 1000],
+    // Tlačítko „0" vynuluje zadání (± není — záporný zápis řeší Pirátská loď).
+    quickZero: true,
     // Ikony a tooltipy vlajek v tabulce.
     flagMeta: {
       skullIsland: { icon: "☠️", title: "Ostrov lebek" },
-      bust: { icon: "💥", title: "Vybouchnutí — tři lebky, 0 bodů" },
+      bust: { icon: "💥", title: "Výbuch — tři lebky, 0 bodů" },
+      pirateShip: { icon: "🚢", title: "Pirátská loď — nesplněný počet šavlí" },
     },
     variants: [
       {
@@ -134,20 +140,43 @@
       },
     ],
     validateInput(value) {
-      return Number.isInteger(value) && value % 100 === 0
+      return Number.isInteger(value) && value % 100 === 0 && value >= 0
         ? null
-        : "Zadej násobek 100 (může být záporný).";
+        : "Zadej nezáporný násobek 100.";
     },
+    // Pořadí režimů zápisu dle dohody: Běžná hra, Výbuch, Pirátská loď,
+    // Ostrov lebek (pořadí v poli = pořadí záložek v panelu).
     specialMoves: [
+      // Bez parametrů → formulář režimu je jen tlačítko Zapsat, žádný input.
+      { id: "bust", label: "Výbuch", icon: "💥", params: [] },
+      {
+        id: "pirateShip", label: "Pirátská loď", icon: "🚢",
+        params: [
+          // Penalizace z karty — jen tři pevné hodnoty, vybírá se tlačítkem.
+          {
+            id: "penalty", type: "choice",
+            requiredMessage: "Vyber výši penalizace.",
+            options: [
+              { value: 300, label: "−300" },
+              { value: 500, label: "−500" },
+              { value: 1000, label: "−1000" },
+            ],
+          },
+        ],
+      },
       {
         id: "skullIsland", label: "Ostrov lebek", icon: "💀",
         params: [
-          { id: "skulls", label: "Počet lebek", type: "number" },
+          // Na Ostrov lebek se vstupuje od 4 lebek; maximum je 10
+          // (8 kostek + až 2 lebky z pirátské karty).
+          {
+            id: "skulls", label: "Počet lebek", type: "choice",
+            requiredMessage: "Vyber počet lebek.",
+            options: [4, 5, 6, 7, 8, 9, 10].map((n) => ({ value: n, label: String(n) })),
+          },
           { id: "pirateCard", label: "Karta Pirát (×2)", type: "bool" },
         ],
       },
-      // Bez parametrů → formulář režimu je jen tlačítko Zapsat, žádný input.
-      { id: "bust", label: "Vybouchnutí", icon: "💥", params: [] },
     ],
     // Jediný zdroj bodovací pravdy: stejná applyRecord, kterou používá replay()
     // pro detekci konce hry, se tu skládá nad nulovými součty jednoho kola.
@@ -170,6 +199,9 @@
         if (rec.special === "bust") {
           addFlag(flags, rec.playerId, "bust");
           parts[rec.playerId].push(0);
+        } else if (rec.special === "pirateShip") {
+          addFlag(flags, rec.playerId, "pirateShip");
+          parts[rec.playerId].push(-rec.flags.penalty);
         } else if (rec.special === "skullIsland") {
           // Ikonu ☠️ dostává jen pachatel; oběti poznají penalizaci z rozpisu buňky.
           addFlag(flags, rec.playerId, "skullIsland");
