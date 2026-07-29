@@ -69,7 +69,8 @@
           }
         }
       } else if (phase === "defense") {
-        // Obranný hod je zapsán jako jeden záznam. Když stáhne triggera (typicky
+        // Poslední výprava přehozeného vítěze (defenderReroll) je zapsaná jako
+        // jeden záznam. Když stáhne triggera (typicky
         // Ostrovem lebek) pod cíl, hra pokračuje stejně jako po neúspěšném
         // rozhodujícím kole — žádný auto-výherce, další ≥ cíl vyhrává rovnou.
         const anyAtTarget = order.some((id) => totals[id] >= target);
@@ -132,11 +133,18 @@
         default: 6000,
       },
       {
+        // Oficiální pravidlo Albi (rules/Ukončení hry.jpeg): „Jestliže někdo
+        // během závěrečných výprav dosáhne vyššího skóre, smí se na svou
+        // poslední výpravu vydat i prvně zmíněný hráč."
         id: "defenderReroll",
-        label: "Obranný hod přehozeného vedoucího",
-        type: "boolean",
+        label: "Poslední výprava přehozeného vítěze",
+        type: "enum",
+        help: "Když hráče, který dosáhl cíle první, někdo v závěrečném kole přehodí, smí se vydat ještě na jednu poslední výpravu.",
+        options: [
+          { value: true, label: "Smí házet ještě jednou" },
+          { value: false, label: "Už neháže" },
+        ],
         default: false,
-        help: "Domácí varianta: přehozený vedoucí dostane ještě jeden hod navíc.",
       },
     ],
     validateInput(value) {
@@ -244,7 +252,7 @@
       if (st.phase === "done") return null;
       const playerId = st.expectPlayer();
       const note = st.phase === "decisive" ? "Rozhodující kolo — poslední tah!"
-        : st.phase === "defense" ? "Obranný hod!"
+        : st.phase === "defense" ? "Poslední výprava přehozeného vítěze!"
         : null;
       return { type: "turn", roundIndex: st.turnsTaken[playerId], playerId, note };
     },

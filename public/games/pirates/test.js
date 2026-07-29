@@ -170,7 +170,7 @@ test("obranný hod (skullIsland) stáhne všechny pod cíl → hra pokračuje, d
   let st = Engine.derive(g, def);
   assert.strictEqual(st.finished, false);
   // p3 ≥ cíl a je nad triggerem (p1 = −500) → defenderReroll spouští obranu triggera
-  assert.deepStrictEqual([st.next.playerId, st.next.note], ["p1", "Obranný hod!"]);
+  assert.deepStrictEqual([st.next.playerId, st.next.note], ["p1", "Poslední výprava přehozeného vítěze!"]);
   skullIsland(g, 15, false);           // p1 obranný hod: p2 −1500 → −1500, p3 −1500 → −500; p1 sám beze změny (−500)
   st = Engine.derive(g, def);
   assert.strictEqual(st.finished, false, "po obraně nikdo ≥ cíl → hra pokračuje (ne rovnou konec)");
@@ -205,7 +205,7 @@ test("defenderReroll: přehozený trigger dostane obranný hod", () => {
   turn(g, 1500);                       // p2 přehodil
   let st = Engine.derive(g, def);
   assert.strictEqual(st.finished, false);
-  assert.deepStrictEqual([st.next.playerId, st.next.note], ["p1", "Obranný hod!"]);
+  assert.deepStrictEqual([st.next.playerId, st.next.note], ["p1", "Poslední výprava přehozeného vítěze!"]);
   turn(g, 600);                        // p1: 1600 → obrana uspěla
   st = Engine.derive(g, def);
   assert.strictEqual(st.finished, true);
@@ -228,6 +228,15 @@ test("defenderReroll vypnutý (default): žádná obrana", () => {
   const st = Engine.derive(g, def);
   assert.strictEqual(st.finished, true);
   assert.deepStrictEqual(st.winnerIds, ["p2"]);
+});
+
+test("varianta defenderReroll: plnohodnotná varianta s nadpisem, ne „domácí varianta“", () => {
+  const v = def.variants.find((x) => x.id === "defenderReroll");
+  assert.strictEqual(v.type, "enum", "enum se dvěma možnostmi → v UI má vlastní nadpis");
+  assert.deepStrictEqual(v.options.map((o) => o.value), [true, false]);
+  assert.ok(!/domácí/i.test([v.label, v.help, ...v.options.map((o) => o.label)].join(" ")),
+    "poslední výprava přehozeného vítěze je oficiální pravidlo Albi (rules/Ukončení hry.jpeg)");
+  assert.strictEqual(v.default, false);
 });
 
 test("validateInput: nezáporné násobky 100 (zápory řeší režim Pirátská loď)", () => {
