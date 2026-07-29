@@ -88,6 +88,15 @@ test("ostrov lebek: počet lebek volbou 4–10 (8 kostek + až 2 lebky z karty)"
   assert.strictEqual(island.params.find((p) => p.id === "pirateCard").type, "bool");
 });
 
+test("ostrov lebek: s kartou Pirát jde vybrat jen 4–8 lebek (bez karty lebek = jen 8 kostek)", () => {
+  const island = def.specialMoves.find((m) => m.id === "skullIsland");
+  const skulls = island.params.find((p) => p.id === "skulls");
+  assert.strictEqual(skulls.optionDisabled(9, { pirateCard: true }), true);
+  assert.strictEqual(skulls.optionDisabled(10, { pirateCard: true }), true);
+  assert.strictEqual(skulls.optionDisabled(8, { pirateCard: true }), false);
+  assert.strictEqual(skulls.optionDisabled(10, { pirateCard: false }), false);
+});
+
 test("pirátská loď (neúspěch): pachatel −penalizace, ostatních se netýká, tah se počítá", () => {
   const g = makeGame();
   turn(g, 300);                        // p1

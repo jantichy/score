@@ -64,6 +64,9 @@
     validateInput(value) {
       return Number.isInteger(value) && value >= 0 ? null : "Zadej celé číslo ≥ 0.";
     },
+    // Rychlá přičítací tlačítka u každého hráče + „0" pro vynulování zadání.
+    quickAmounts: [1, 2, 5, 10, 20, 50],
+    quickZero: true,
     specialMoves: [{ id: "kamikaze", label: "Kamikaze", icon: "💣", params: [] }],
     // Per-hráč přepínač kola: označení volajícího „Kabo!" (max 1, povinné
     // v běžném kole; nevyplněné skóre volajícího = potvrzený úspěch → 0).

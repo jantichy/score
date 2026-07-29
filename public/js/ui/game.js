@@ -238,6 +238,16 @@
     const errorEl = el("p", { class: "field-error" });
     const specialErrorEl = el("p", { class: "field-error" });
 
+    // Dostupnost voleb „choice" parametrů může záviset na hodnotách ostatních
+    // parametrů (param.optionDisabled) — přepočítává se po každé změně.
+    function refreshChoiceOptions() {
+      const flags = {};
+      for (const [id, entry] of Object.entries(paramInputs)) flags[id] = entry.get();
+      for (const entry of Object.values(paramInputs)) {
+        if (entry.refreshOptions) entry.refreshOptions(flags);
+      }
+    }
+
     const input = el("input", {
       type: "text", inputmode: "numeric", autocomplete: "off",
       class: "score-input score-input-wide",
@@ -322,7 +332,12 @@
       // i předvyplnění po undo tak nemusí rozlišovat druh pole.
       const rows = (move.params || []).map((param) => {
         if (param.type === "bool") {
-          const field = el("input", { type: "checkbox" });
+          const field = el("input", {
+            type: "checkbox",
+            // Změna může ovlivnit dostupnost voleb jiných parametrů
+            // (param.optionDisabled, např. karta Pirát → max 8 lebek).
+            onchange: () => refreshChoiceOptions(),
+          });
           paramInputs[param.id] = {
             param,
             get: () => !!field.checked,
@@ -342,13 +357,23 @@
           };
           const btns = (param.options || []).map((opt) => el("button", {
             type: "button", class: "btn-special",
-            onclick: () => setSelected(opt.value),
+            onclick: () => { setSelected(opt.value); refreshChoiceOptions(); },
           }, opt.label));
           paramInputs[param.id] = {
             param,
             get: () => selected,
             set: setSelected,
             focus: () => { if (btns[0]) btns[0].focus(); },
+            // Přepočet dostupnosti voleb podle hodnot ostatních parametrů;
+            // volba, která přestala platit, se zruší (zápis si vyžádá novou).
+            refreshOptions: (flags) => {
+              if (typeof param.optionDisabled !== "function") return;
+              param.options.forEach((opt, j) => {
+                const off = !!param.optionDisabled(opt.value, flags);
+                btns[j].disabled = off;
+                if (off && selected === opt.value) setSelected(undefined);
+              });
+            },
           };
           return el("div", { class: "param-row param-row-choice" },
             param.label ? el("span", { class: "param-label" }, param.label) : null,
@@ -374,6 +399,7 @@
         onclick: () => onConfirmSpecial(move),
       }, "Zapsat tah");
 
+      refreshChoiceOptions();
       specialArea.append(...rows, specialErrorEl, submitBtn);
     }
 
@@ -466,6 +492,7 @@
             if (param.type === "bool") entry.set(!!rec.flags[param.id]);
             else if (rec.flags[param.id] !== undefined) entry.set(rec.flags[param.id]);
           }
+          refreshChoiceOptions();
         }
       } else if (rec.value !== null && rec.value !== undefined) {
         input.value = String(rec.value);
@@ -581,13 +608,15 @@
     const specialMoves = def.specialMoves || [];
     const allowsNegative = allowsNegativeInput(def);
 
-    const signBtns = {}; // playerId -> tlačítko ± (jen když allowsNegative)
+    // playerId -> tlačítka pracující s jeho inputem (±, 0, +N) — při aktivním
+    // speciálu se vypínají spolu s inputy.
+    const quickControls = {};
 
     function setNumericInputsDisabled() {
       const active = !!specialState.playerId;
       for (const pid of Object.keys(inputs)) {
         inputs[pid].disabled = active;
-        if (signBtns[pid]) signBtns[pid].disabled = active;
+        for (const b of quickControls[pid] || []) b.disabled = active;
       }
     }
 
@@ -601,16 +630,11 @@
       errorEls[p.id] = errorEl;
 
       const showStarter = typeof def.starter === "function" && p.order === starterIndex;
-      // Jméno hráče na vlastním řádku, veškeré ovládání (input + tlačítka) pod ním
-      // v jedné wrapovací řadě — nikdy se nesmí stát, že část ovládání je vedle
-      // jména a zbytek přeteče pod něj.
-      const controls = [input];
-      if (allowsNegative) {
-        const signBtn = signToggleBtn(input);
-        signBtns[p.id] = signBtn;
-        controls.push(signBtn);
-      }
-
+      // Jméno hráče na vlastním řádku, ovládání pod ním v jedné wrapovací
+      // řadě: input, nedělitelný blok speciálů (přepínače kola + speciální
+      // tahy) a nedělitelný blok rychlých čísel (±, 0, +N). Bloky se uvnitř
+      // nelámou — buď se vejdou celé, nebo celé odskočí na další řádek.
+      const specialBtns = [];
       for (const rf of roundFlagDefs) {
         const flagBtn = el("button", {
           type: "button", class: "btn-special btn-flag-" + rf.id,
@@ -620,7 +644,7 @@
             if (!input.disabled) input.focus();
           },
         }, rf.label);
-        controls.push(flagBtn);
+        specialBtns.push(flagBtn);
         flagBtn._pid = p.id;
       }
 
@@ -638,8 +662,34 @@
         }, (move.icon ? move.icon + " " : "") + move.label);
         btn._pid = p.id;
         btn._moveId = move.id;
-        controls.push(btn);
+        specialBtns.push(btn);
       }
+
+      const quickEls = [];
+      if (allowsNegative) quickEls.push(signToggleBtn(input));
+      if (def.quickZero) {
+        quickEls.push(el("button", {
+          type: "button", class: "btn-quick", title: "Vynulovat zadání",
+          onclick: () => { input.value = "0"; if (!input.disabled) input.focus(); },
+        }, "0"));
+      }
+      for (const amt of def.quickAmounts || []) {
+        quickEls.push(el("button", {
+          type: "button", class: "btn-quick",
+          onclick: () => {
+            const raw = input.value.trim();
+            const cur = /^-?\d+$/.test(raw) ? parseInt(raw, 10) : 0;
+            input.value = String(cur + amt);
+          },
+        }, "+" + amt));
+      }
+      quickControls[p.id] = quickEls;
+
+      const controls = [
+        input,
+        specialBtns.length ? el("div", { class: "special-group" }, ...specialBtns) : null,
+        quickEls.length ? el("div", { class: "quick-group" }, ...quickEls) : null,
+      ];
 
       // Klik kamkoli do oblasti řádku hráče (jméno, volné místo) přesune focus
       // do jeho číselného pole — na input se tak není potřeba trefovat přesně.

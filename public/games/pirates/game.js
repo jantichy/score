@@ -168,11 +168,14 @@
         id: "skullIsland", label: "Ostrov lebek", icon: "💀",
         params: [
           // Na Ostrov lebek se vstupuje od 4 lebek; maximum je 10
-          // (8 kostek + až 2 lebky z pirátské karty).
+          // (8 kostek + až 2 lebky z karty Lebka/Lebky).
           {
             id: "skulls", label: "Počet lebek", type: "choice",
             requiredMessage: "Vyber počet lebek.",
             options: [4, 5, 6, 7, 8, 9, 10].map((n) => ({ value: n, label: String(n) })),
+            // Hráč má v tahu jen jednu kartu: s kartou Pirát (×2) nemůže mít
+            // zároveň kartu s lebkami → lebky jen z 8 kostek, 9–10 nedává smysl.
+            optionDisabled: (skulls, flags) => !!flags.pirateCard && skulls > 8,
           },
           { id: "pirateCard", label: "Karta Pirát (×2)", type: "bool" },
         ],
