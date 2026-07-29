@@ -132,6 +132,29 @@ test("UI režim Ostrov lebek: lebky 4–10 tlačítky, karta Pirát, žádný te
   assert.deepStrictEqual(game.log[0].flags, { skulls: 6, pirateCard: false });
 });
 
+test("UI Ostrov lebek: karta Pirát vypne 9 a 10 lebek a zruší jejich případný výběr", async () => {
+  const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
+  const c = await renderGameScreen(game);
+  c.querySelector(".mode-toggle").querySelectorAll("button")[3].click();
+  const special = c.querySelector(".special-area");
+  const skulls = special.querySelector(".choice-group").querySelectorAll("button");
+  const pirateCard = special.querySelectorAll("input")[0];
+  skulls[5].click(); // výběr 9
+  assert.ok(skulls[5].classList.contains("active"));
+  pirateCard.checked = true;
+  pirateCard.dispatch("change");
+  assert.strictEqual(skulls[5].disabled, true, "9 je s kartou Pirát vypnutá");
+  assert.strictEqual(skulls[6].disabled, true, "10 je s kartou Pirát vypnutá");
+  assert.strictEqual(skulls[4].disabled, false, "8 zůstává dostupná");
+  assert.ok(!skulls[5].classList.contains("active"), "neplatný výběr 9 se zrušil");
+  special.querySelector(".btn-action").click();
+  await tick(); await tick();
+  assert.strictEqual(game.log.length, 0, "bez platného výběru se nic nezapíše");
+  pirateCard.checked = false;
+  pirateCard.dispatch("change");
+  assert.strictEqual(skulls[6].disabled, false, "bez karty je 10 zase dostupná");
+});
+
 test("UI režim Výbuch: žádný input, jen Zapsat; zapíše special bust", async () => {
   const game = newStoredGame(piratesDef, ["Marky", "Honza"]);
   const c = await renderGameScreen(game);
@@ -328,6 +351,43 @@ test("UI KABO: klik na řádek hráče i na tlačítko Kabo fokusuje jeho input"
   assert.strictEqual(document.activeElement, honzaInput, "klik na jméno fokusuje input");
   honzaRow.querySelector(".btn-flag-cabo").click();
   assert.strictEqual(document.activeElement, honzaInput, "klik na Kabo fokusuje input");
+});
+
+test("UI KABO řádek hráče: input + nedělitelný blok Kabo/Kamikaze + nedělitelný blok čísel", async () => {
+  const game = newStoredGame(caboDef, ["Marky", "Honza"]);
+  const c = await renderGameScreen(game);
+  const row = c.querySelector(".input-panel").querySelectorAll(".input-row")[0];
+  const controls = row.querySelector(".input-controls");
+  assert.deepStrictEqual(controls.children.map((n) => [n.tagName, n.className]),
+    [["INPUT", "score-input"], ["DIV", "special-group"], ["DIV", "quick-group"]],
+    "pořadí: input, blok speciálů, blok rychlých čísel");
+  assert.deepStrictEqual(texts(row.querySelector(".special-group").querySelectorAll("button")),
+    ["📢 Kabo", "💣 Kamikaze"]);
+  assert.deepStrictEqual(texts(row.querySelector(".quick-group").querySelectorAll("button")),
+    ["0", "+1", "+2", "+5", "+10", "+20", "+50"]);
+  const input = row.querySelector(".score-input");
+  const qbtns = row.querySelector(".quick-group").querySelectorAll("button");
+  qbtns[4].click(); // +10
+  qbtns[3].click(); // +5
+  assert.strictEqual(input.value, "15", "rychlá tlačítka přičítají do inputu hráče");
+  qbtns[0].click();
+  assert.strictEqual(input.value, "0", "0 vynuluje zadání");
+});
+
+test("UI KABO: aktivní Kamikaze deaktivuje i rychlá tlačítka všech hráčů", async () => {
+  const game = newStoredGame(caboDef, ["Marky", "Honza"]);
+  const c = await renderGameScreen(game);
+  const rows = c.querySelector(".input-panel").querySelectorAll(".input-row");
+  const kamikazeBtn = rows[0].querySelector(".btn-move-kamikaze");
+  kamikazeBtn.click();
+  for (const row of rows) {
+    for (const b of row.querySelector(".quick-group").querySelectorAll("button")) {
+      assert.strictEqual(b.disabled, true, "rychlé tlačítko je při speciálu vypnuté");
+    }
+  }
+  kamikazeBtn.click(); // deaktivace
+  const qbtn = rows[1].querySelector(".quick-group").querySelectorAll("button")[1];
+  assert.strictEqual(qbtn.disabled, false, "po zrušení speciálu zase fungují");
 });
 
 test("UI štítek „začíná“ jen u her s def.starter (SCOUT ano, KABO ne)", async () => {

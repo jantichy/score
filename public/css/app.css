@@ -297,12 +297,6 @@ button:focus-visible, [role="button"]:focus-visible {
   background: var(--card); border: 1px solid var(--line); border-radius: 8px;
   padding: 16px; display: flex; flex-direction: column; gap: 12px;
 }
-/* Zadávání výsledků je vycentrované (texty i ovládací prvky) — netýká se
-   výsledkového panelu „Stupně vítězů" (.result-panel). */
-.input-panel:not(.result-panel) { text-align: center; }
-.input-panel:not(.result-panel) .input-controls,
-.input-panel:not(.result-panel) .choice-group,
-.input-panel:not(.result-panel) .param-row-bool { justify-content: center; }
 /* Řádek hráče: jméno na vlastním řádku, veškeré ovládání pod ním (wrapuje jako celek) */
 .input-row { display: flex; flex-direction: column; gap: 6px; }
 .input-row .field-error { margin: 0; }
@@ -360,9 +354,13 @@ button:focus-visible, [role="button"]:focus-visible {
 }
 .score-input-wide { width: 8em; min-height: 56px; font-size: 1.3rem; }
 .btn-quick { min-width: var(--tap); font-size: 0.9rem; padding: 0 10px; }
-/* Nedělitelný blok rychlých tlačítek vedle inputu: uvnitř se neláme (nowrap),
-   ve wrapovacím .input-controls se buď vejde celý, nebo celý odskočí. */
-.quick-group { display: flex; flex-wrap: nowrap; gap: 8px; }
+/* Nedělitelné bloky tlačítek vedle inputu: uvnitř se nelámou (nowrap),
+   ve wrapovacím .input-controls se buď vejde celý blok, nebo celý odskočí. */
+.quick-group, .special-group { display: flex; flex-wrap: nowrap; gap: 8px; }
+/* V řádcích hráčů (all-at-once) kompaktnější, ať se blok 0…+50 vejde
+   na šířku panelu vcelku. */
+.input-row .quick-group, .input-row .special-group { gap: 5px; }
+.input-row .btn-quick { min-width: 34px; padding: 0 6px; font-size: 0.85rem; }
 /* Přepínač režimu zápisu (Běžná hra / speciální tah) — segmentovaná tlačítka,
    zmáčknuté dostává akcentovou barvu hry. Formuláře režimů se schovávají
    přes [hidden], které musí přebít jejich display: flex. */
