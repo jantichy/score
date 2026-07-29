@@ -666,3 +666,12 @@ test("UI all-at-once panel: puntík barvy před jménem hráče", async () => {
   assert.strictEqual(dots.length, 2, "každý řádek hráče má puntík");
   assert.ok(dots[0].getAttribute("style").includes(PALETTE[5].value));
 });
+
+test("UI dotyk: app.css zakazuje dvojťukový zoom (touch-action: manipulation)", () => {
+  const fs = require("node:fs");
+  const css = fs.readFileSync(require("node:path").join(__dirname, "../public/css/app.css"), "utf8");
+  assert.ok(
+    /html\s*\{[^}]*touch-action:\s*manipulation/.test(css),
+    "html má mít touch-action: manipulation (jinak iPad při rychlém klikání na tlačítka zoomuje)"
+  );
+});
