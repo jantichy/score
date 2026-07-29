@@ -123,42 +123,94 @@
       const hasHistory = !!lastGame;
       const sourceGame = lastGame || games.reduce(
         (best, game) => (!best || game.lastPlayedAt > best.lastPlayedAt ? game : best), null);
-      let names = sourceGame
+      // Hráči vč. barev (docs/specs/2026-07-28-barvy-hracu.md): barvy se dědí
+      // ze zdrojové hry spolu se jmény; nový hráč dostane první volnou z palety.
+      const PLAYER_COLORS = g.Score.dom.PLAYER_COLORS;
+      function freeColor(list) {
+        const used = new Set(list.map((p) => p.color));
+        const free = PLAYER_COLORS.find((c) => !used.has(c.value));
+        return (free || PLAYER_COLORS[list.length % PLAYER_COLORS.length]).value;
+      }
+      const players = sourceGame
         ? [...sourceGame.players].sort((a, b) => a.order - b.order)
-            .map((p) => p.name).slice(0, def.playerRange.max)
+            .map((p) => ({ name: p.name, color: p.color }))
+            .slice(0, def.playerRange.max)
         : [];
-      while (names.length < def.playerRange.min) names.push("");
+      while (players.length < def.playerRange.min)
+        players.push({ name: "", color: freeColor(players) });
       let dragIndex = null;
+      let openColorIndex = null; // index hráče s rozbaleným popoverem barev
       const playersError = el("p", { class: "field-error" });
 
       const playersList = el("div", { class: "player-chips" });
       const addBtn = el("button", {
         type: "button", class: "btn-add-player",
         onclick: () => {
-          names.push("");
+          players.push({ name: "", color: freeColor(players) });
+          openColorIndex = null;
           renderPlayers();
           const inputs = playersList.querySelectorAll("input");
           inputs[inputs.length - 1].focus();
         },
       }, "+ Přidat hráče");
 
+      function focusColorBtn(i) {
+        const dots = playersList.querySelectorAll(".btn-color");
+        if (dots[i]) dots[i].focus();
+      }
+
       function renderPlayers() {
         clear(playersList);
-        names.forEach((name, i) => {
+        players.forEach((player, i) => {
           const nameInput = el("input", {
             type: "text", autocomplete: "off",
-            placeholder: "Hráč " + (i + 1), value: name,
-            oninput: (e) => { names[i] = e.target.value; },
+            placeholder: "Hráč " + (i + 1), value: player.name,
+            oninput: (e) => { players[i].name = e.target.value; },
           });
+          // Puntík barvy mezi jménem a mazacím tlačítkem; klik rozbalí popover
+          // s celou paletou (žádné míchátko). Duplicitní volba se nevaliduje.
+          const colorMeta = PLAYER_COLORS.find((c) => c.value === player.color);
+          const colorBtn = el("button", {
+            type: "button", class: "btn-color",
+            style: "background:" + player.color,
+            "aria-label": "Barva hráče" + (colorMeta ? ": " + colorMeta.label : ""),
+            "aria-expanded": openColorIndex === i ? "true" : "false",
+            onclick: () => {
+              openColorIndex = openColorIndex === i ? null : i;
+              renderPlayers();
+              focusColorBtn(i);
+            },
+          });
+          const popover = openColorIndex !== i ? null : el("div", {
+            class: "color-popover",
+            onkeydown: (ev) => {
+              if (ev.key !== "Escape") return;
+              openColorIndex = null;
+              renderPlayers();
+              focusColorBtn(i);
+            },
+          }, ...PLAYER_COLORS.map((c) => el("button", {
+            type: "button",
+            class: "color-swatch" + (c.value === player.color ? " selected" : ""),
+            style: "background:" + c.value,
+            "aria-label": c.label,
+            onclick: () => {
+              players[i].color = c.value;
+              openColorIndex = null;
+              renderPlayers();
+              focusColorBtn(i);
+            },
+          }, c.value === player.color ? "✓" : null)));
           const removeBtn = el("button", {
             type: "button", class: "btn-remove", "aria-label": "Odebrat hráče",
-            disabled: names.length <= def.playerRange.min ? "disabled" : null,
-            onclick: () => { names.splice(i, 1); renderPlayers(); },
+            disabled: players.length <= def.playerRange.min ? "disabled" : null,
+            onclick: () => { players.splice(i, 1); openColorIndex = null; renderPlayers(); },
           }, "×");
           const handle = el("span", {
             class: "drag-handle", title: "Přetažením změníš pořadí",
           }, "⠿");
-          const chip = el("div", { class: "player-chip" }, handle, nameInput, removeBtn);
+          const chip = el("div", { class: "player-chip" },
+            handle, nameInput, colorBtn, popover, removeBtn);
 
           // Drag & drop pořadí přes Pointer Events — jednotně myš i dotyk
           // (prst na úchytu ⠿ chip „chytne" a táhne; touch-action: none na
@@ -194,8 +246,9 @@
             dragIndex = null;
             clearDragMarks();
             if (targetIdx >= 0 && targetIdx !== fromIdx) {
-              const [moved] = names.splice(fromIdx, 1);
-              names.splice(targetIdx, 0, moved);
+              const [moved] = players.splice(fromIdx, 1);
+              players.splice(targetIdx, 0, moved);
+              openColorIndex = null;
               renderPlayers();
             }
           });
@@ -206,10 +259,20 @@
 
           playersList.append(chip);
         });
-        addBtn.disabled = names.length >= def.playerRange.max;
+        addBtn.disabled = players.length >= def.playerRange.max;
         playersList.append(addBtn);
       }
       renderPlayers();
+
+      // Klik/tap kamkoli mimo popover barev ho zavře. Posluchač sedí na
+      // kontejneru obrazovky (ne na document), takže zaniká spolu s ní.
+      container.addEventListener("pointerdown", (ev) => {
+        if (openColorIndex === null) return;
+        if (ev.target && ev.target.closest &&
+            ev.target.closest(".color-popover, .btn-color")) return;
+        openColorIndex = null;
+        renderPlayers();
+      });
 
       const variantFields = def.variants.map((v) => buildVariantField(v, initialVariants[v.id]));
       const variantsSection = el("div", { class: "setup-variants" },
@@ -231,7 +294,7 @@
         let hasError = false;
         playersError.textContent = "";
 
-        const trimmed = names.map((n) => n.trim());
+        const trimmed = players.map((p) => p.name.trim());
         if (trimmed.some((n) => n === "")) {
           playersError.textContent = "Vyplň jména všech hráčů.";
           hasError = true;
@@ -258,7 +321,8 @@
         if (hasError) return;
 
         const game = g.Score.Engine.newGame({
-          def, players: trimmed, variants: variantValues, now: Date.now(),
+          def, players: players.map((p, i) => ({ name: trimmed[i], color: p.color })),
+          variants: variantValues, now: Date.now(),
         });
         await g.Score.DB.putGame(game);
 

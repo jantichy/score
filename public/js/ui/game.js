@@ -43,16 +43,29 @@
     return null;
   }
 
-  function renderTable(state, game, def) {
+  // showColors: barvy hráčů se kreslí jen během hry — po dohrání platí
+  // výsledkové barvy (viz docs/specs/2026-07-28-barvy-hracu.md).
+  function renderTable(state, game, def, showColors) {
     const playerIds = game.players.map((p) => p.id);
+    const colorOf = {};
+    if (showColors) {
+      for (const p of game.players) colorOf[p.id] = p.color;
+    }
     // zvýraznění příštího zápisu (jen pro sekvenční tahy, viz Task 12)
     const nextTurn = state.next && state.next.type === "turn" ? state.next : null;
 
     const headerRow = el("tr", null,
       el("th", { class: "col-round" }),
-      ...game.players.map((p) => el("th", {
-        class: nextTurn && p.id === nextTurn.playerId ? "next-player" : null,
-      }, p.name)));
+      ...game.players.map((p) => {
+        const cls = [
+          nextTurn && p.id === nextTurn.playerId ? "next-player" : null,
+          colorOf[p.id] ? "pc" : null,
+        ].filter(Boolean).join(" ") || null;
+        return el("th", {
+          class: cls,
+          style: colorOf[p.id] ? "--pc:" + colorOf[p.id] : null,
+        }, p.name);
+      }));
 
     const rowCount = state.roundsPlanned !== null
       ? state.roundsPlanned
@@ -63,7 +76,8 @@
       const round = state.rounds[i];
       const cells = playerIds.map((pid) => {
         const isNextCell = nextTurn && nextTurn.roundIndex === i && nextTurn.playerId === pid;
-        if (!round) return el("td", { class: isNextCell ? "next-cell" : null });
+        const nextStyle = isNextCell && colorOf[pid] ? "--pc:" + colorOf[pid] : null;
+        if (!round) return el("td", { class: isNextCell ? "next-cell" : null, style: nextStyle });
         const value = round.scores[pid];
         const flags = flagCell(def, pid, round.flags);
         // rozpis od pluginu ("2+10", "+50", "800-600") má přednost před sečteným
@@ -75,7 +89,7 @@
         const adjust = adjustSuffix(pid, round.roundIndex, state.totalEvents);
         const isNeg = typeof value === "number" && value < 0;
         const cls = [isNeg ? "neg" : null, isNextCell ? "next-cell" : null].filter(Boolean).join(" ") || null;
-        return el("td", { class: cls }, valueText, adjust, ...flags);
+        return el("td", { class: cls, style: nextStyle }, valueText, adjust, ...flags);
       });
       bodyRows.push(el("tr", null,
         el("td", { class: "col-round" }, String(i + 1)), ...cells));
@@ -128,11 +142,14 @@
       }
       const barTop = v >= 0 ? (top - v) * px : zeroY;
       const barH = Math.max(Math.abs(v) * px, 2);
+      // Během hry (bez badges) nese sloupec barvu hráče přes --pc; signální
+      // třídy překročení hranice (sb-win/sb-lost) ji v CSS přebíjejí.
+      const colorStyle = badges ? "" : ";--pc:" + p.color;
       nameCells.push(el("span", { class: "sb-name" }, p.name));
       barCells.push(el("div", { class: "sb-cell" },
         el("div", {
           class: barCls,
-          style: "top:" + barTop.toFixed(1) + "px;height:" + barH.toFixed(1) + "px",
+          style: "top:" + barTop.toFixed(1) + "px;height:" + barH.toFixed(1) + "px" + colorStyle,
         })));
       totalCells.push(el("span", { class: totalCls }, g.Score.dom.fmtScore(v)));
     }
@@ -394,7 +411,11 @@
     ];
     if (next.note) bannerChildren.push(el("p", { class: "turn-note" }, next.note));
 
-    const banner = el("div", { class: "turn-banner" }, ...bannerChildren);
+    // Barva hráče na tahu podtrhuje celý banner (proužek + jemné podbarvení).
+    const banner = el("div", {
+      class: "turn-banner pc",
+      style: "--pc:" + player.color,
+    }, ...bannerChildren);
     banner.addEventListener("click", () => { if (!normalForm.hidden) input.focus(); });
 
     const panel = el("aside", { class: "input-panel" },
@@ -559,6 +580,7 @@
       // Kliky na tlačítka/input samotný se nechávají být (mají vlastní chování).
       const row = el("div", { class: "input-row" },
         el("span", { class: "input-player-name" },
+          el("span", { class: "pc-dot", style: "--pc:" + p.color, "aria-hidden": "true" }),
           p.name, showStarter ? el("span", { class: "starter-badge" }, " začíná") : null),
         el("div", { class: "input-controls" }, ...controls),
         errorEl);
@@ -790,7 +812,7 @@
       // jsou hry s předem známým počtem kol (roundsPlanned, např. SCOUT):
       // tam se od začátku vypisuje celá tabulka s očíslovanými prázdnými řádky.
       const table = tableState.rounds.length > 0 || tableState.roundsPlanned !== null
-        ? renderTable(tableState, game, def)
+        ? renderTable(tableState, game, def, !isFinished)
         : null;
 
       // Levý sloupec vypadá u rozehrané i dohrané hry stejně: nahoře graf

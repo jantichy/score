@@ -123,6 +123,24 @@ button:focus-visible, [role="button"]:focus-visible {
 }
 .btn-remove:hover:not(:disabled) { background: var(--btn); color: var(--lost); box-shadow: none; }
 .btn-add-player { border-style: dashed; background: none; }
+/* Barva hráče (--pc): puntík v chipu + popover s paletou. Chip je kotva popoveru. */
+.player-chip { position: relative; }
+.btn-color {
+  width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0;
+  border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.2); flex-shrink: 0;
+}
+.btn-color:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--btn-border); }
+.color-popover {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 10;
+  display: grid; grid-template-columns: repeat(4, var(--tap)); gap: 8px;
+  padding: 10px; background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.color-swatch {
+  width: var(--tap); height: var(--tap); padding: 0; border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2); font-size: 1.1rem; color: var(--fg);
+}
+.color-swatch.selected { outline: 2px solid var(--fg); outline-offset: 2px; }
 .setup-variants {
   display: grid; grid-template-columns: 1fr; gap: 16px 32px; margin-top: 24px;
 }
@@ -201,7 +219,9 @@ button:focus-visible, [role="button"]:focus-visible {
 .sb-cell { flex: 1 1 0; position: relative; min-width: 0; }
 .sb-bar {
   position: absolute; left: 22%; width: 56%;
-  background: color-mix(in srgb, var(--accent, #888) 45%, #ffffff);
+  /* Během hry nese sloupec barvu hráče (--pc z inline stylu); bez ní pastelová
+     odvozenina akcentu hry. Signální a výsledkové třídy níž mají přednost. */
+  background: var(--pc, color-mix(in srgb, var(--accent, #888) 45%, #ffffff));
   border-radius: 3px 3px 0 0;
 }
 .sb-bar.sb-win { background: var(--win); }
@@ -311,6 +331,18 @@ button:focus-visible, [role="button"]:focus-visible {
 
 /* === Sekvenční vstup (Piráti) === */
 .turn-banner { display: flex; flex-direction: column; gap: 6px; }
+/* Barva hráče na tahu podtrhuje celý banner „Teď hraje: …" */
+.turn-banner.pc {
+  border-left: 6px solid var(--pc);
+  background: color-mix(in srgb, var(--pc) 18%, #ffffff);
+  border-radius: 6px; padding: 10px 12px;
+}
+/* Puntík barvy hráče před jménem (panel „všichni najednou") */
+.pc-dot {
+  display: inline-block; width: 0.75em; height: 0.75em; border-radius: 50%;
+  background: var(--pc); border: 1px solid rgba(0, 0, 0, 0.15);
+  margin-right: 6px;
+}
 .turn-player { font-size: 1.3rem; font-weight: 700; }
 .turn-note {
   background: #fff3cd; border: 1px solid #f0c419; border-radius: 6px;
@@ -338,7 +370,11 @@ button:focus-visible, [role="button"]:focus-visible {
 
 /* Zvýraznění příštího zápisu v tabulce (sekvenční model) */
 .score-table th.next-player { background: var(--accent, #f0efe9); color: #fff; }
-.score-table td.next-cell { outline: 2px solid var(--accent, var(--fg)); outline-offset: -2px; }
+.score-table td.next-cell { outline: 2px solid var(--pc, var(--accent, var(--fg))); outline-offset: -2px; }
+/* Barvy hráčů v hlavičce tabulky: podtržení jména; hráč na tahu dostává
+   pastelové pozadí své barvy (tmavý text — pastel bílý text neunese). */
+.score-table thead th.pc { border-bottom: 3px solid var(--pc); }
+.score-table th.next-player.pc { background: var(--pc); color: var(--fg); }
 
 /* === Historie her === */
 .history-list { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 16px; }

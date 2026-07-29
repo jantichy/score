@@ -7,8 +7,12 @@ const { Engine, Games } = globalThis.Score;
 const def = Games.get("pirates");
 
 function makeGame(variants, names) {
-  return Engine.newGame({ def, players: names || ["A", "B", "C"],
-    variants: variants || {}, now: 1 });
+  // Hráči jdou do newGame jako objekty {name, color}; pro pravidla je barva nepodstatná.
+  return Engine.newGame({
+    def,
+    players: (names || ["A", "B", "C"]).map((name, i) => ({ name, color: "#c" + i })),
+    variants: variants || {}, now: 1,
+  });
 }
 function entry(game, patch) {
   const next = Engine.derive(game, def).next;

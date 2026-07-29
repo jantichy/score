@@ -12,10 +12,10 @@ skončení hry se barvy hráčů nikde neuplatňují — tam platí výsledkové
 
 - Pevná paleta **8 pastelových barev** v jádru: `Score.dom.PLAYER_COLORS`
   (hex řetězce). Dnešní maximum hráčů je 5, paleta má rezervu.
-- DB: `players[].color` — hex řetězec, syrový fakt, **aditivní pole**.
-  Staré hry bez `color` fungují dál (fallback na dnešní neutrální vzhled).
-- `Engine.newGame` aditivně přijímá hráče i jako objekty `{name, color}`
-  (řetězce dál fungují).
+- DB: `players[].color` — hex řetězec, syrový fakt. Aplikace zatím nemá
+  žádné existující databáze, takže barva je **povinnou součástí hráče** —
+  žádné fallbacky pro hráče bez barvy.
+- `Engine.newGame` přijímá hráče jako objekty `{name, color}`.
 
 ## Zakládání hry
 
@@ -24,8 +24,8 @@ skončení hry se barvy hráčů nikde neuplatňují — tam platí výsledkové
 - Klik na puntík otevře popover s mřížkou 8 vzorků; klik na vzorek nastaví
   barvu a zavře popover. Zavírá i Esc a klik mimo. Vybraný vzorek označen.
 - **Auto-přiřazení:** předvyplnění hráčů z poslední hry převezme i barvy;
-  každý nový hráč (i ručně přidaný) dostane první barvu palety, kterou
-  zatím nikdo nemá. Duplicita se tvrdě nevaliduje.
+  nový hráč (výchozí prázdný i ručně přidaný) dostane první barvu palety,
+  kterou zatím nikdo nemá. Duplicita se tvrdě nevaliduje.
 - **Dědění mezi hrami:** barvy se předvyplňují spolu se jmény ze zdrojové
   hry (poslední hra stejného typu, jinak poslední hra jakéhokoliv typu).
 

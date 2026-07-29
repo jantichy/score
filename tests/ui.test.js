@@ -4,16 +4,16 @@
 // focus, historii, medaile, setup hráčů. Pravidla her kryjí games/<slug>/test.js.
 const assert = require("node:assert");
 require("./dom-stub.js");
-require("../js/games.js");
-require("../js/engine.js");
-require("../js/ui/dom.js");
-require("../js/ui/home.js");
-require("../js/ui/history.js");
-require("../js/ui/game.js");
-require("../js/ui/setup.js");
-require("../games/cabo/game.js");
-require("../games/pirates/game.js");
-require("../games/scout/game.js");
+require("../public/js/games.js");
+require("../public/js/engine.js");
+require("../public/js/ui/dom.js");
+require("../public/js/ui/home.js");
+require("../public/js/ui/history.js");
+require("../public/js/ui/game.js");
+require("../public/js/ui/setup.js");
+require("../public/games/cabo/game.js");
+require("../public/games/pirates/game.js");
+require("../public/games/scout/game.js");
 
 const { Engine, Games, UI } = globalThis.Score;
 const piratesDef = Games.get("pirates");
@@ -26,15 +26,23 @@ globalThis.Score.DB = {
   async putGame(game) { store.set(game.id, game); },
   async deleteGame(id) { store.delete(id); },
   async getMeta() { return null; },
-  async putMeta() {},
+  async setMeta() {},
   async allGames() { return [...store.values()]; },
 };
+// setup.js po odeslání přepíná obrazovku přes App.show — v testech stačí no-op.
+globalThis.App = { show() {} };
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 const texts = (nodes) => nodes.map((n) => n.textContent);
 
+// Hráči jdou do newGame vždy jako objekty {name, color} — testům stačí
+// rozdat barvy z palety po pořadí (stejně jako to dělá zakládání hry).
+const PALETTE = globalThis.Score.dom.PLAYER_COLORS;
+const colored = (names) =>
+  names.map((n, i) => (typeof n === "string" ? { name: n, color: PALETTE[i].value } : n));
+
 function newStoredGame(def, names, variants) {
-  const game = Engine.newGame({ def, players: names, variants: variants || {}, now: 1 });
+  const game = Engine.newGame({ def, players: colored(names), variants: variants || {}, now: 1 });
   store.set(game.id, game);
   return game;
 }
@@ -223,7 +231,7 @@ test("UI štítek „začíná“ jen u her s def.starter (SCOUT ano, KABO ne)",
 // === Historie ===
 
 function finishedPiratesGame() {
-  const game = Engine.newGame({ def: piratesDef, players: ["Marky", "Honza"],
+  const game = Engine.newGame({ def: piratesDef, players: colored(["Marky", "Honza"]),
     variants: { targetScore: 1000 }, now: 1 });
   addTurn(game, piratesDef, { value: 1000 });
   addTurn(game, piratesDef, { value: 0 });
@@ -233,7 +241,7 @@ function finishedPiratesGame() {
 }
 
 test("UI historie: datum bez času", () => {
-  const game = Engine.newGame({ def: piratesDef, players: ["A", "B"], variants: {}, now: 1 });
+  const game = Engine.newGame({ def: piratesDef, players: colored(["A", "B"]), variants: {}, now: 1 });
   game.lastPlayedAt = new Date(2026, 6, 28, 14, 35).getTime();
   const node = UI.historyList([game], "pirates", async () => {});
   const dateText = node.querySelector(".history-date").textContent;
@@ -243,7 +251,7 @@ test("UI historie: datum bez času", () => {
 });
 
 test("UI historie: rozehraná hra = jména s průběžnými body, ikonová tlačítka", () => {
-  const game = Engine.newGame({ def: piratesDef, players: ["Marky", "Honza"], variants: {}, now: 1 });
+  const game = Engine.newGame({ def: piratesDef, players: colored(["Marky", "Honza"]), variants: {}, now: 1 });
   addTurn(game, piratesDef, { value: 300 });
   const node = UI.historyList([game], "pirates", async () => {});
   assert.strictEqual(node.querySelector(".history-lead").textContent, "Marky 300 · Honza 0");
@@ -261,7 +269,7 @@ test("UI historie: dohraná hra = pořadí s odznaky a body (Piráti: 🏆 jen v
 // === Odznaky pořadí (medaile / pohár / výbuch) ===
 
 test("UI rankingBadges: podium hra dává 🥇🥈🥉, vybouchlí 💥 a šedý tón", () => {
-  const game = Engine.newGame({ def: caboDef, players: ["A", "B", "C"], variants: {}, now: 1 });
+  const game = Engine.newGame({ def: caboDef, players: colored(["A", "B", "C"]), variants: {}, now: 1 });
   const ranking = [
     { playerId: "p1", name: "A", rank: 1, total: 40 },
     { playerId: "p2", name: "B", rank: 2, total: 80 },
@@ -275,7 +283,7 @@ test("UI rankingBadges: podium hra dává 🥇🥈🥉, vybouchlí 💥 a šedý
 });
 
 test("UI rankingBadges: winnerOnly hra dává 🏆 jen vítězi, ostatní bez odznaku", () => {
-  const game = Engine.newGame({ def: piratesDef, players: ["A", "B"], variants: {}, now: 1 });
+  const game = Engine.newGame({ def: piratesDef, players: colored(["A", "B"]), variants: {}, now: 1 });
   const ranking = [
     { playerId: "p1", name: "A", rank: 1, total: 6000 },
     { playerId: "p2", name: "B", rank: 2, total: 4000 },
@@ -320,4 +328,153 @@ test("UI hlavička: mimo homepage je vpravo Domů, na homepage není", () => {
   assert.deepStrictEqual(texts(gameHeader.querySelectorAll("button")), ["← Zpět", "Domů"]);
   const homeHeader = dom.pageHeader({ title: "Score", home: true });
   assert.strictEqual(homeHeader.querySelectorAll("button").length, 0);
+});
+
+// === Barvy hráčů (spec docs/specs/2026-07-28-barvy-hracu.md) ===
+
+test("UI zakládání: hráči dostanou automaticky různé barvy z palety", async () => {
+  store.clear();
+  const container = document.createElement("div");
+  await UI.setup.render(container, { gameTypeId: "pirates" });
+  const dots = container.querySelector(".player-chips").querySelectorAll(".btn-color");
+  assert.strictEqual(dots.length, 2, "každý hráč má barevný puntík");
+  assert.ok(dots[0].getAttribute("style").includes(PALETTE[0].value), "1. hráč = 1. barva palety");
+  assert.ok(dots[1].getAttribute("style").includes(PALETTE[1].value), "2. hráč = 2. barva palety");
+  assert.ok(dots[0].getAttribute("aria-label"), "puntík má aria-label");
+});
+
+test("UI zakládání: barvy se dědí ze zdrojové hry spolu se jmény", async () => {
+  store.clear();
+  const last = Engine.newGame({ def: piratesDef, players: [
+    { name: "Marky", color: PALETTE[5].value },
+    { name: "Honza", color: PALETTE[0].value },
+  ], variants: {}, now: 1 });
+  store.set(last.id, last);
+  const container = document.createElement("div");
+  await UI.setup.render(container, { gameTypeId: "pirates" });
+  const dots = container.querySelector(".player-chips").querySelectorAll(".btn-color");
+  assert.ok(dots[0].getAttribute("style").includes(PALETTE[5].value), "Marky zdědil svou barvu");
+  assert.ok(dots[1].getAttribute("style").includes(PALETTE[0].value), "Honza zdědil svou barvu");
+  store.clear();
+});
+
+test("UI zakládání: nově přidaný hráč dostane první volnou barvu palety", async () => {
+  store.clear();
+  const last = Engine.newGame({ def: piratesDef, players: [
+    { name: "Marky", color: PALETTE[5].value },
+    { name: "Honza", color: PALETTE[0].value },
+  ], variants: {}, now: 1 });
+  store.set(last.id, last);
+  const container = document.createElement("div");
+  await UI.setup.render(container, { gameTypeId: "pirates" });
+  container.querySelector(".btn-add-player").click();
+  const dots = container.querySelector(".player-chips").querySelectorAll(".btn-color");
+  assert.strictEqual(dots.length, 3);
+  assert.ok(dots[2].getAttribute("style").includes(PALETTE[1].value),
+    "PC[0] a PC[5] jsou obsazené → nový hráč dostane PC[1]");
+  store.clear();
+});
+
+test("UI zakládání: klik na puntík otevře popover, výběr nastaví barvu a vrátí focus", async () => {
+  store.clear();
+  const container = document.createElement("div");
+  await UI.setup.render(container, { gameTypeId: "pirates" });
+  const chips = container.querySelector(".player-chips");
+  assert.strictEqual(chips.querySelector(".color-popover"), null, "popover je zavřený");
+  chips.querySelectorAll(".btn-color")[0].click();
+  const popover = chips.querySelector(".color-popover");
+  assert.ok(popover, "klik na puntík otevřel popover");
+  const swatches = popover.querySelectorAll(".color-swatch");
+  assert.strictEqual(swatches.length, PALETTE.length, "popover nabízí celou paletu");
+  assert.ok(swatches[0].classList.contains("selected"), "aktuální barva je označená");
+  swatches[3].click();
+  assert.strictEqual(chips.querySelector(".color-popover"), null, "výběr popover zavřel");
+  const dot = chips.querySelectorAll(".btn-color")[0];
+  assert.ok(dot.getAttribute("style").includes(PALETTE[3].value), "barva se změnila");
+  assert.strictEqual(document.activeElement, dot, "focus se vrátil na puntík");
+});
+
+test("UI zakládání: Začít hru uloží hráče i s barvami do DB", async () => {
+  store.clear();
+  const container = document.createElement("div");
+  await UI.setup.render(container, { gameTypeId: "pirates" });
+  const inputs = container.querySelector(".player-chips").querySelectorAll("input");
+  inputs[0].value = "Marky"; inputs[0].dispatch("input");
+  inputs[1].value = "Honza"; inputs[1].dispatch("input");
+  container.querySelector(".btn-start").click();
+  await tick(); await tick();
+  const game = [...store.values()][0];
+  assert.ok(game, "hra se založila");
+  assert.deepStrictEqual(game.players.map((p) => [p.name, p.color]),
+    [["Marky", PALETTE[0].value], ["Honza", PALETTE[1].value]]);
+  store.clear();
+});
+
+test("UI graf: sloupce nesou barvu hráče (--pc) během hry", async () => {
+  const game = newStoredGame(piratesDef, [
+    { name: "Marky", color: PALETTE[5].value },
+    { name: "Honza", color: PALETTE[0].value },
+  ]);
+  const c = await renderGameScreen(game);
+  const bars = c.querySelectorAll(".sb-bar");
+  assert.ok(bars[0].getAttribute("style").includes("--pc:" + PALETTE[5].value));
+  assert.ok(bars[1].getAttribute("style").includes("--pc:" + PALETTE[0].value));
+});
+
+test("UI graf i tabulka: po dohrání se barvy hráčů nikde nekreslí", async () => {
+  const game = Engine.newGame({ def: piratesDef, players: [
+    { name: "Marky", color: PALETTE[5].value },
+    { name: "Honza", color: PALETTE[0].value },
+  ], variants: { targetScore: 1000 }, now: 1 });
+  store.set(game.id, game);
+  addTurn(game, piratesDef, { value: 1000 });
+  addTurn(game, piratesDef, { value: 0 });
+  const state = Engine.derive(game, piratesDef);
+  Engine.freeze(game, state, 2);
+  const c = await renderGameScreen(game);
+  for (const bar of c.querySelectorAll(".sb-bar")) {
+    assert.ok(!(bar.getAttribute("style") || "").includes("--pc"),
+      "sloupec dohrané hry nemá barvu hráče");
+  }
+  for (const th of c.querySelector("thead").querySelectorAll("th")) {
+    assert.ok(!(th.getAttribute("style") || "").includes("--pc"),
+      "hlavička dohrané hry nemá barvu hráče");
+  }
+});
+
+test("UI tabulka: jména v hlavičce podtržená barvou hráče", async () => {
+  const game = newStoredGame(piratesDef, [
+    { name: "Marky", color: PALETTE[5].value },
+    { name: "Honza", color: PALETTE[0].value },
+  ]);
+  addTurn(game, piratesDef, { value: 300 });
+  const c = await renderGameScreen(game);
+  const ths = c.querySelector("thead").querySelectorAll("th");
+  assert.ok(ths[1].classList.contains("pc"), "th hráče nese třídu pc");
+  assert.ok(ths[1].getAttribute("style").includes("--pc:" + PALETTE[5].value));
+  assert.ok(!ths[0].classList.contains("pc"), "sloupec čísel kol barvu nemá");
+});
+
+test("UI sekvenční banner: proužek v barvě hráče na tahu", async () => {
+  const game = newStoredGame(piratesDef, [
+    { name: "Marky", color: PALETTE[5].value },
+    { name: "Honza", color: PALETTE[0].value },
+  ]);
+  const c = await renderGameScreen(game);
+  const next = Engine.derive(game, piratesDef).next;
+  const onTurn = game.players.find((p) => p.id === next.playerId);
+  const banner = c.querySelector(".turn-banner");
+  assert.ok(banner.classList.contains("pc"), "banner nese třídu pc");
+  assert.ok(banner.getAttribute("style").includes("--pc:" + onTurn.color));
+});
+
+test("UI all-at-once panel: puntík barvy před jménem hráče", async () => {
+  const game = newStoredGame(caboDef, [
+    { name: "Marky", color: PALETTE[5].value },
+    { name: "Honza", color: PALETTE[0].value },
+  ]);
+  const c = await renderGameScreen(game);
+  const dots = c.querySelector(".input-panel").querySelectorAll(".pc-dot");
+  assert.strictEqual(dots.length, 2, "každý řádek hráče má puntík");
+  assert.ok(dots[0].getAttribute("style").includes(PALETTE[5].value));
 });
