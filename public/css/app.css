@@ -209,8 +209,6 @@ button:focus-visible, [role="button"]:focus-visible {
 .sb-total {
   font-weight: 700; font-size: 1.3rem; font-variant-numeric: tabular-nums;
 }
-.sb-total-win { color: var(--win); }
-.sb-total-lost { color: var(--lost); }
 .sb-total-busted { color: var(--busted); }
 .sb-bars {
   position: relative; display: flex; gap: 8px; margin: 8px 0 6px;
@@ -224,8 +222,6 @@ button:focus-visible, [role="button"]:focus-visible {
   background: var(--pc, color-mix(in srgb, var(--accent, #888) 45%, #ffffff));
   border-radius: 3px 3px 0 0;
 }
-.sb-bar.sb-win { background: var(--win); }
-.sb-bar.sb-lost { background: var(--lost); }
 /* Barvy sloupců dle finálního pořadí (jen dohraná hra) */
 .sb-bar.sb-gold { background: var(--gold); }
 .sb-bar.sb-silver { background: var(--silver); }
@@ -284,6 +280,14 @@ button:focus-visible, [role="button"]:focus-visible {
   font-size: 0.85rem;
 }
 .score-table tbody tr:last-child td { border-bottom: none; }
+/* Právě hrané kolo (hry s pevným počtem kol): jemné podbarvení řádku
+   akcentem hry + zvýrazněné číslo kola. */
+.score-table tr.current-round td {
+  background: color-mix(in srgb, var(--accent, #888) 9%, #ffffff);
+}
+.score-table tr.current-round td.col-round {
+  color: var(--accent, var(--fg)); font-weight: 700; font-size: 1rem;
+}
 .score-table .neg { color: var(--lost); }
 .cell-flag { margin-left: 4px; font-size: 0.8em; }
 .cell-adjust { color: var(--muted); }
@@ -372,6 +376,8 @@ button:focus-visible, [role="button"]:focus-visible {
   border: 1px solid var(--line); border-radius: 6px; font-size: 1rem;
 }
 .param-row input[type="checkbox"] { width: 22px; height: 22px; }
+/* Bool parametr: checkbox inline před popiskem, ne roztažený přes sloupec */
+.param-row-bool { justify-content: flex-start; gap: 8px; }
 /* Parametr typu „choice": popisek (je-li) nad segmentovanými tlačítky,
    vybraná hodnota svítí akcentem přes .btn-special.active */
 .param-row-choice {

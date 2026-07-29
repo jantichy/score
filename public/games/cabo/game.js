@@ -10,7 +10,7 @@
     id: "cabo",
     name: "Kabo",
     rulesVersion: 1,
-    accentColor: "#c0392b",
+    accentColor: "#1d5c8f",
     icon: "🃏",
     playerRange: { min: 2, max: 4 },
     endType: "targetScore",

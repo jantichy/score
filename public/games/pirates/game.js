@@ -95,7 +95,7 @@
     id: "pirates",
     name: "Pirátské kostky",
     rulesVersion: 1,
-    accentColor: "#1d5c8f",
+    accentColor: "#c0392b",
     icon: "🏴‍☠️",
     playerRange: { min: 2, max: 5 },
     endType: "targetScore",
