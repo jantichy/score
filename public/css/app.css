@@ -126,11 +126,27 @@ button:focus-visible, [role="button"]:focus-visible {
 }
 .btn-remove:hover:not(:disabled) { background: var(--btn); color: var(--lost); box-shadow: none; }
 .btn-add-player { border-style: dashed; background: none; }
+
+/* Paleta barev hráčů — jediné místo s odstíny. JS a DB nesou jen token
+   ("red", …), prvek dostane třídu .pc-<token>; pastelová plocha je --pc,
+   sytější odstín --pc-strong zapíná modifikátor .pc-strong (sloupec grafu
+   po překročení hraniční čáry — nahrazuje signální zelenou/červenou). */
+.pc-red    { --pc: #f28b82; --pc-strong: #ea4335; }
+.pc-orange { --pc: #f8b26a; --pc-strong: #f57c00; }
+.pc-yellow { --pc: #fde293; --pc-strong: #fbbc04; }
+.pc-green  { --pc: #81c995; --pc-strong: #34a853; }
+.pc-teal   { --pc: #7fd8d3; --pc-strong: #00acc1; }
+.pc-blue   { --pc: #8ab4f8; --pc-strong: #4285f4; }
+.pc-purple { --pc: #c58af9; --pc-strong: #a142f4; }
+.pc-pink   { --pc: #ff9bc4; --pc-strong: #e91e63; }
+.pc-strong { --pc: var(--pc-strong); }
+
 /* Barva hráče (--pc): puntík v chipu + popover s paletou. Chip je kotva popoveru. */
 .player-chip { position: relative; }
 .btn-color {
   width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0;
   border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.2); flex-shrink: 0;
+  background: var(--pc);
 }
 .btn-color:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--btn-border); }
 .color-popover {
@@ -142,6 +158,7 @@ button:focus-visible, [role="button"]:focus-visible {
 .color-swatch {
   width: var(--tap); height: var(--tap); padding: 0; border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.2); font-size: 1.1rem; color: var(--fg);
+  background: var(--pc);
 }
 .color-swatch.selected { outline: 2px solid var(--fg); outline-offset: 2px; }
 .setup-variants {
@@ -220,7 +237,7 @@ button:focus-visible, [role="button"]:focus-visible {
 .sb-cell { flex: 1 1 0; position: relative; min-width: 0; }
 .sb-bar {
   position: absolute; left: 22%; width: 56%;
-  /* Během hry nese sloupec barvu hráče (--pc z inline stylu); bez ní pastelová
+  /* Během hry nese sloupec barvu hráče (--pc z třídy pc-<token>); bez ní pastelová
      odvozenina akcentu hry. Signální a výsledkové třídy níž mají přednost. */
   background: var(--pc, color-mix(in srgb, var(--accent, #888) 45%, #ffffff));
   border-radius: 3px 3px 0 0;

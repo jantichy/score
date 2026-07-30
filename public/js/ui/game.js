@@ -62,12 +62,9 @@
       ...game.players.map((p) => {
         const cls = [
           nextTurn && p.id === nextTurn.playerId ? "next-player" : null,
-          colorOf[p.id] ? "pc" : null,
+          colorOf[p.id] ? "pc pc-" + colorOf[p.id] : null,
         ].filter(Boolean).join(" ") || null;
-        return el("th", {
-          class: cls,
-          style: colorOf[p.id] ? "--pc:" + colorOf[p.id] : null,
-        }, p.name);
+        return el("th", { class: cls }, p.name);
       }));
 
     // U sekvenčních tahů se kreslí i řádek právě hraného kola (zatím prázdný,
@@ -81,8 +78,9 @@
       const round = state.rounds[i];
       const cells = playerIds.map((pid) => {
         const isNextCell = nextTurn && nextTurn.roundIndex === i && nextTurn.playerId === pid;
-        const nextStyle = isNextCell && colorOf[pid] ? "--pc:" + colorOf[pid] : null;
-        if (!round) return el("td", { class: isNextCell ? "next-cell" : null, style: nextStyle });
+        const nextCls = isNextCell
+          ? "next-cell" + (colorOf[pid] ? " pc-" + colorOf[pid] : "") : null;
+        if (!round) return el("td", { class: nextCls });
         const value = round.scores[pid];
         const flags = flagCell(def, pid, round.flags);
         // rozpis od pluginu ("2+10", "+50", "800-600") má přednost před sečteným
@@ -93,8 +91,8 @@
           : g.Score.dom.fmtScore(displayText || value);
         const adjust = adjustSuffix(pid, round.roundIndex, state.totalEvents);
         const isNeg = typeof value === "number" && value < 0;
-        const cls = [isNeg ? "neg" : null, isNextCell ? "next-cell" : null].filter(Boolean).join(" ") || null;
-        return el("td", { class: cls, style: nextStyle }, valueText, adjust, ...flags);
+        const cls = [isNeg ? "neg" : null, nextCls].filter(Boolean).join(" ") || null;
+        return el("td", { class: cls }, valueText, adjust, ...flags);
       });
       bodyRows.push(el("tr", {
         class: nextRound && i === nextRound.roundIndex ? "current-round" : null,
@@ -145,19 +143,17 @@
       }
       const barTop = v >= 0 ? (top - v) * px : zeroY;
       const barH = Math.max(Math.abs(v) * px, 2);
-      // Během hry (bez badges) nese sloupec barvu hráče přes --pc. Překročení
-      // hraniční čáry (oběma směry) nepřebarvuje na zelenou/červenou — sloupec
-      // jen přepne do výrazně sytějšího odstínu téže barvy, aby mezi pastely
-      // okolo křičel.
+      // Během hry (bez badges) nese sloupec barvu hráče třídou pc-<token>.
+      // Překročení hraniční čáry (oběma směry) nepřebarvuje na zelenou/červenou
+      // — modifikátor pc-strong jen přepne do výrazně sytějšího odstínu téže
+      // barvy, aby sloupec mezi pastely okolo křičel.
       const over = !badges && scale && v >= scale.max;
-      const colorStyle = badges
-        ? ""
-        : ";--pc:" + (over ? g.Score.dom.strongColor(p.color) : p.color);
+      if (!badges) barCls += " pc-" + p.color + (over ? " pc-strong" : "");
       nameCells.push(el("span", { class: "sb-name" }, p.name));
       barCells.push(el("div", { class: "sb-cell" },
         el("div", {
           class: barCls,
-          style: "top:" + barTop.toFixed(1) + "px;height:" + barH.toFixed(1) + "px" + colorStyle,
+          style: "top:" + barTop.toFixed(1) + "px;height:" + barH.toFixed(1) + "px",
         })));
       totalCells.push(el("span", { class: totalCls }, g.Score.dom.fmtScore(v)));
     }
@@ -516,8 +512,7 @@
 
     // Barva hráče na tahu podtrhuje celý banner (proužek + jemné podbarvení).
     const banner = el("div", {
-      class: "turn-banner pc",
-      style: "--pc:" + player.color,
+      class: "turn-banner pc pc-" + player.color,
     }, ...bannerChildren);
     banner.addEventListener("click", () => { if (!normalForm.hidden) input.focus(); });
 
@@ -690,7 +685,7 @@
       // Kliky na tlačítka/input samotný se nechávají být (mají vlastní chování).
       const row = el("div", { class: "input-row" },
         el("span", { class: "input-player-name" },
-          el("span", { class: "pc-dot", style: "--pc:" + p.color, "aria-hidden": "true" }),
+          el("span", { class: "pc-dot pc-" + p.color, "aria-hidden": "true" }),
           p.name, showStarter ? el("span", { class: "starter-badge" }, " začíná") : null),
         el("div", { class: "input-controls" }, ...controls),
         errorEl);

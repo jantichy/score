@@ -128,8 +128,8 @@
       const PLAYER_COLORS = g.Score.dom.PLAYER_COLORS;
       function freeColor(list) {
         const used = new Set(list.map((p) => p.color));
-        const free = PLAYER_COLORS.find((c) => !used.has(c.value));
-        return (free || PLAYER_COLORS[list.length % PLAYER_COLORS.length]).value;
+        const free = PLAYER_COLORS.find((c) => !used.has(c.id));
+        return (free || PLAYER_COLORS[list.length % PLAYER_COLORS.length]).id;
       }
       const players = sourceGame
         ? [...sourceGame.players].sort((a, b) => a.order - b.order)
@@ -169,10 +169,9 @@
           });
           // Puntík barvy mezi jménem a mazacím tlačítkem; klik rozbalí popover
           // s celou paletou (žádné míchátko). Duplicitní volba se nevaliduje.
-          const colorMeta = PLAYER_COLORS.find((c) => c.value === player.color);
+          const colorMeta = PLAYER_COLORS.find((c) => c.id === player.color);
           const colorBtn = el("button", {
-            type: "button", class: "btn-color",
-            style: "background:" + player.color,
+            type: "button", class: "btn-color pc-" + player.color,
             "aria-label": "Barva hráče" + (colorMeta ? ": " + colorMeta.label : ""),
             "aria-expanded": openColorIndex === i ? "true" : "false",
             onclick: () => {
@@ -191,16 +190,15 @@
             },
           }, ...PLAYER_COLORS.map((c) => el("button", {
             type: "button",
-            class: "color-swatch" + (c.value === player.color ? " selected" : ""),
-            style: "background:" + c.value,
+            class: "color-swatch pc-" + c.id + (c.id === player.color ? " selected" : ""),
             "aria-label": c.label,
             onclick: () => {
-              players[i].color = c.value;
+              players[i].color = c.id;
               openColorIndex = null;
               renderPlayers();
               focusColorBtn(i);
             },
-          }, c.value === player.color ? "✓" : null)));
+          }, c.id === player.color ? "✓" : null)));
           const removeBtn = el("button", {
             type: "button", class: "btn-remove", "aria-label": "Odebrat hráče",
             disabled: players.length <= def.playerRange.min ? "disabled" : null,

@@ -54,3 +54,12 @@ Regresní testy (tests/ui.test.js + tests/engine.test.js): auto-přiřazení
 různých barev včetně nově přidaného hráče, dědění barev ze zdrojové hry,
 uložení `color` v players, sloupec grafu v barvě hráče během hry, žádné
 barvy hráčů po dohrání, banner tahu v barvě hráče.
+
+## Aktualizace 2026-07-30 — tokeny místo hexů
+
+Hráč v DB i v JS nese jen **token barvy** (`red`, `orange`, `yellow`, `green`,
+`teal`, `blue`, `purple`, `pink`); JS paleta (`dom.js PLAYER_COLORS`) má jen
+`{id, label}`. Konkrétní odstíny žijí výhradně v CSS: `.pc-<token>` definuje
+pastelový `--pc` i sytý `--pc-strong`, modifikátor `.pc-strong` sytou variantu
+zapíná (sloupec grafu přes hranici). Dřívější `strongColor()` (zpětný lookup
+hex → položka palety) je odstraněný.

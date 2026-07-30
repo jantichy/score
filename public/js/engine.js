@@ -15,6 +15,8 @@
       status: "in_progress",
       // Hráč přichází jako objekt {name, color} — jméno i barva jsou syrová
       // fakta hráče (barvu přiřazuje vždy zakládání hry, viz ui/setup.js).
+      // color je token palety ("red", "blue", …) — konkrétní odstíny jsou
+      // čistě věc CSS (.pc-<token> v app.css), do DB hexy nepatří.
       players: players.map((p, i) =>
         ({ id: "p" + (i + 1), name: p.name, color: p.color, order: i })),
       variants: variants,

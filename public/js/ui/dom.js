@@ -63,27 +63,21 @@
     return String(value).replace(/-/g, "−");
   }
 
-  // Paleta barev hráčů (viz docs/specs/2026-07-28-barvy-hracu.md): pastelové
-  // odstíny s dostatečným rozestupem, vždy jako plocha/linka — nikdy barva
-  // textu. `strong` je sytější odstín téže barvy — sloupec grafu jím „křičí"
-  // po překročení hraniční čáry (nahrazuje dřívější signální zelenou/červenou).
+  // Paleta barev hráčů (viz docs/specs/2026-07-28-barvy-hracu.md): hráč nese
+  // v DB i v JS jen token ("red", "blue", …); prvek dostane třídu pc-<token>
+  // a konkrétní odstíny (pastelový --pc, sytější --pc-strong pro graf přes
+  // hranici) definuje výhradně CSS v app.css. Popisek je pro aria-label.
   const PLAYER_COLORS = [
-    { value: "#f28b82", strong: "#ea4335", label: "červená" },
-    { value: "#f8b26a", strong: "#f57c00", label: "oranžová" },
-    { value: "#fde293", strong: "#fbbc04", label: "žlutá" },
-    { value: "#81c995", strong: "#34a853", label: "zelená" },
-    { value: "#7fd8d3", strong: "#00acc1", label: "tyrkysová" },
-    { value: "#8ab4f8", strong: "#4285f4", label: "modrá" },
-    { value: "#c58af9", strong: "#a142f4", label: "fialová" },
-    { value: "#ff9bc4", strong: "#e91e63", label: "růžová" },
+    { id: "red", label: "červená" },
+    { id: "orange", label: "oranžová" },
+    { id: "yellow", label: "žlutá" },
+    { id: "green", label: "zelená" },
+    { id: "teal", label: "tyrkysová" },
+    { id: "blue", label: "modrá" },
+    { id: "purple", label: "fialová" },
+    { id: "pink", label: "růžová" },
   ];
 
-  // Sytější odstín k barvě hráče; mimo paletu (nemělo by nastat) vrací vstup.
-  function strongColor(color) {
-    const entry = PLAYER_COLORS.find((c) => c.value === color);
-    return entry ? entry.strong : color;
-  }
-
   g.Score = g.Score || {};
-  g.Score.dom = { el, clear, pressable, pageHeader, fmtScore, PLAYER_COLORS, strongColor };
+  g.Score.dom = { el, clear, pressable, pageHeader, fmtScore, PLAYER_COLORS };
 })(globalThis);
