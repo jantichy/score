@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 // Obecné testy enginu a UI + automaticky objevené testy her (games/<slug>/test.js).
-const coreFiles = ["games.test.js", "engine.test.js", "ui.test.js"]
+const coreFiles = ["games.test.js", "engine.test.js", "ui.test.js", "sw.test.js"]
   .map((f) => path.join(__dirname, f));
 const gamesDir = path.join(__dirname, "..", "public", "games");
 const gameFiles = fs.readdirSync(gamesDir, { withFileTypes: true })
