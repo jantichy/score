@@ -228,11 +228,36 @@
     }, "±");
   }
 
+  // „±" je jen záchrana pro hry, které přijímají záporné hodnoty, ale nemají
+  // na ně počítací tlačítka — se zápornými tlačítky (Cirkus) je zbytečné.
+  function needsSignToggle(def) {
+    return allowsNegativeInput(def) && !(def.quickAmounts || []).some((a) => a < 0);
+  }
+
+  // Počítací tlačítka deklaruje hra: quickZero předřadí „0", quickAmounts určuje
+  // hodnoty i pořadí — 0 v seznamu je tlačítko vynulování, záporné hodnoty
+  // odečítají a kreslí se s typografickým minusem U+2212.
+  function quickAmountBtns(def, input) {
+    const amounts = (def.quickZero ? [0] : []).concat(def.quickAmounts || []);
+    return amounts.map((amt) => amt === 0
+      ? el("button", {
+          type: "button", class: "btn-quick", title: "Vynulovat zadání",
+          onclick: () => { input.value = "0"; if (!input.disabled) input.focus(); },
+        }, "0")
+      : el("button", {
+          type: "button", class: "btn-quick",
+          onclick: () => {
+            const raw = input.value.trim();
+            const cur = /^-?\d+$/.test(raw) ? parseInt(raw, 10) : 0;
+            input.value = String(cur + amt);
+          },
+        }, amt > 0 ? "+" + amt : "−" + -amt));
+  }
+
   function renderSequentialPanel(game, def, state, rerender, busyRef, undoBtn, prefill) {
     const next = state.next;
     const player = game.players.find((p) => p.id === next.playerId);
     const specialMoves = def.specialMoves || [];
-    const allowsNegative = allowsNegativeInput(def);
 
     const paramInputs = {}; // paramId -> input element (pro aktivní speciál)
     const errorEl = el("p", { class: "field-error" });
@@ -252,23 +277,8 @@
       type: "text", inputmode: "numeric", autocomplete: "off",
       class: "score-input score-input-wide",
     });
-    const signBtn = allowsNegative ? signToggleBtn(input) : null;
-    // Tlačítko „0" (def.quickZero): vynuluje rozklikané rychlé přičítání.
-    const zeroBtn = def.quickZero ? el("button", {
-      type: "button", class: "btn-quick", title: "Vynulovat zadání",
-      onclick: () => { input.value = "0"; input.focus(); },
-    }, "0") : null;
-
-    // Rychlá přičítací tlačítka deklaruje hra (Piráti: násobky 100).
-    const quickAmounts = def.quickAmounts || [];
-    const quickBtns = quickAmounts.map((amt) => el("button", {
-      type: "button", class: "btn-quick",
-      onclick: () => {
-        const raw = input.value.trim();
-        const cur = /^-?\d+$/.test(raw) ? parseInt(raw, 10) : 0;
-        input.value = String(cur + amt);
-      },
-    }, "+" + amt));
+    const signBtn = needsSignToggle(def) ? signToggleBtn(input) : null;
+    const quickBtns = quickAmountBtns(def, input);
 
     const confirmBtn = el("button", {
       type: "button", class: "btn-action", style: "--accent:" + def.accentColor,
@@ -285,8 +295,8 @@
     const normalForm = el("div", { class: "mode-form" },
       el("div", { class: "input-controls" },
         input,
-        (signBtn || zeroBtn || quickBtns.length)
-          ? el("div", { class: "quick-group" }, signBtn, zeroBtn, ...quickBtns)
+        (signBtn || quickBtns.length)
+          ? el("div", { class: "quick-group" }, signBtn, ...quickBtns)
           : null),
       errorEl,
       confirmBtn);
@@ -606,7 +616,7 @@
     // aktivace jakéhokoli speciálu z def.specialMoves deaktivuje číselná pole (max 1 aktivní)
     const specialState = { moveId: null, playerId: null };
     const specialMoves = def.specialMoves || [];
-    const allowsNegative = allowsNegativeInput(def);
+    const showSignToggle = needsSignToggle(def);
 
     // playerId -> tlačítka pracující s jeho inputem (±, 0, +N) — při aktivním
     // speciálu se vypínají spolu s inputy.
@@ -665,24 +675,8 @@
         specialBtns.push(btn);
       }
 
-      const quickEls = [];
-      if (allowsNegative) quickEls.push(signToggleBtn(input));
-      if (def.quickZero) {
-        quickEls.push(el("button", {
-          type: "button", class: "btn-quick", title: "Vynulovat zadání",
-          onclick: () => { input.value = "0"; if (!input.disabled) input.focus(); },
-        }, "0"));
-      }
-      for (const amt of def.quickAmounts || []) {
-        quickEls.push(el("button", {
-          type: "button", class: "btn-quick",
-          onclick: () => {
-            const raw = input.value.trim();
-            const cur = /^-?\d+$/.test(raw) ? parseInt(raw, 10) : 0;
-            input.value = String(cur + amt);
-          },
-        }, "+" + amt));
-      }
+      const quickEls = showSignToggle ? [signToggleBtn(input)] : [];
+      quickEls.push(...quickAmountBtns(def, input));
       quickControls[p.id] = quickEls;
 
       const controls = [

@@ -53,3 +53,13 @@ test("validateInput: záporná celá čísla OK", () => {
   assert.strictEqual(def.validateInput(-7, {}), null);
   assert.ok(typeof def.validateInput(2.5, {}) === "string");
 });
+
+test("lidský název Cirkus (dle CZ vydání 4 Kavky), slug zůstává scout", () => {
+  assert.strictEqual(def.id, "scout");
+  assert.strictEqual(def.name, "Cirkus");
+});
+
+test("počítací tlačítka −10…+10 dle Honzy; 0 uprostřed, žádné quickZero", () => {
+  assert.deepStrictEqual(def.quickAmounts, [-10, -5, -2, -1, 0, 1, 2, 5, 10]);
+  assert.ok(!def.quickZero, "pořadí tlačítek řídí quickAmounts, 0 je jeho součástí");
+});

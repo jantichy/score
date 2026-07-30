@@ -3,7 +3,8 @@
 
   g.Score.Games.register({
     id: "scout",
-    name: "Scout",
+    // Lidský název dle českého vydání (4 Kavky); slug zůstává scout.
+    name: "Cirkus",
     rulesVersion: 1,
     accentColor: "#8e5c9e",
     icon: "🎪",
@@ -15,6 +16,8 @@
     inputModel: "allPlayersAtOnce",
     variants: [],
     specialMoves: [],
+    // Počítací tlačítka včetně záporných (nahrazují „±"); 0 uprostřed vynuluje.
+    quickAmounts: [-10, -5, -2, -1, 0, 1, 2, 5, 10],
     validateInput(value) {
       return Number.isInteger(value) ? null : "Zadej celé číslo.";
     },

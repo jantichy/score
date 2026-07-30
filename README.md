@@ -18,7 +18,7 @@ Aplikace běží čistě lokálně (i z `file://`), funguje offline a data uklá
 |---|---|
 | Kabo | `cabo` |
 | Pirátské kostky | `pirates` |
-| Scout | `scout` |
+| Cirkus (Scout) | `scout` |
 
 Plná pravidla každé hry jsou v `public/games/<slug>/rules.md`.
 
