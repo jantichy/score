@@ -390,23 +390,23 @@ test("UI KABO: aktivní Kamikaze deaktivuje i rychlá tlačítka všech hráčů
   assert.strictEqual(qbtn.disabled, false, "po zrušení speciálu zase fungují");
 });
 
-test("UI Cirkus řádek hráče: počítací tlačítka −10…+10 v pořadí dle hry, bez ±", async () => {
+test("UI Cirkus řádek hráče: počítací tlačítka −5…+5 v pořadí dle hry, bez ±", async () => {
   const game = newStoredGame(Games.get("scout"), ["Marky", "Honza"]);
   const c = await renderGameScreen(game);
   const row = c.querySelector(".input-panel").querySelectorAll(".input-row")[0];
   assert.deepStrictEqual(texts(row.querySelector(".quick-group").querySelectorAll("button")),
-    ["−10", "−5", "−2", "−1", "0", "+1", "+2", "+5", "+10"],
+    ["−5", "−2", "−1", "0", "+1", "+2", "+5"],
     "záporná tlačítka s typografickým minusem, 0 uprostřed dle pořadí v quickAmounts");
   assert.strictEqual(row.querySelector(".btn-sign"), null,
     "± je zbytečné — zápory pokrývají záporná počítací tlačítka");
   const input = row.querySelector(".score-input");
   const qbtns = row.querySelector(".quick-group").querySelectorAll("button");
-  qbtns[0].click(); // −10
-  qbtns[1].click(); // −5
-  assert.strictEqual(input.value, "-15", "záporná tlačítka odečítají");
-  qbtns[8].click(); // +10
-  assert.strictEqual(input.value, "-5", "kladná přičítají i do záporného mezisoučtu");
-  qbtns[4].click(); // 0
+  qbtns[0].click(); // −5
+  qbtns[1].click(); // −2
+  assert.strictEqual(input.value, "-7", "záporná tlačítka odečítají");
+  qbtns[6].click(); // +5
+  assert.strictEqual(input.value, "-2", "kladná přičítají i do záporného mezisoučtu");
+  qbtns[3].click(); // 0
   assert.strictEqual(input.value, "0", "0 vynuluje zadání");
 });
 

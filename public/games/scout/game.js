@@ -17,7 +17,8 @@
     variants: [],
     specialMoves: [],
     // Počítací tlačítka včetně záporných (nahrazují „±"); 0 uprostřed vynuluje.
-    quickAmounts: [-10, -5, -2, -1, 0, 1, 2, 5, 10],
+    // Jen po ±5 — s ±10 se řada na desktopu nevešla do řádku.
+    quickAmounts: [-5, -2, -1, 0, 1, 2, 5],
     validateInput(value) {
       return Number.isInteger(value) ? null : "Zadej celé číslo.";
     },
