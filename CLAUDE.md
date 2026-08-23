@@ -1,4 +1,10 @@
-# Score — kontext projektu pro Claude
+# Score
+
+Webová aplikace pro zapisování a vyhodnocování skóre společenských her — bodování po kolech, součty, detekce konce hry a vítěze.
+
+- **Slug:** `score`
+- **Web:** https://www.jantichy.cz/score
+- **Repozitář:** https://github.com/jantichy/score
 
 ## Poznámky patří sem, ne do Memory
 
@@ -6,7 +12,7 @@
 
 ## Co to je
 
-Webová aplikace pro **zapisování a vyhodnocování skóre společenských her** (bodování hráčů po kolech, průběžné i celkové součty, automatická detekce konce hry a vítěze). Obecné jádro + jednotlivé hry jako moduly („přicvakávané" definice her).
+Obecné jádro + jednotlivé hry jako moduly („přicvakávané" definice her).
 
 ## Zásadní omezení a rozhodnutí
 
