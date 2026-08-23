@@ -1461,7 +1461,7 @@ git commit -m "feat: historie her — řazení, pokračování, mazání, štít
 **Files:**
 - Modify: `css/app.css`, `js/ui/game.js` (drobnosti — atributy inputů), ostatní UI soubory jen třídami
 
-**Interfaces:** žádná nová API; vizuální vrstva dle PRD §8b + WEB.md checklist.
+**Interfaces:** žádná nová API; vizuální vrstva dle PRD §8b + web.md checklist.
 
 - [ ] **Step 1: Layout herní obrazovky** — grid: od 900px `grid-template-columns: 1fr 360px` (tabulka | panel); pod 900px panel **nad** tabulkou (u stolu se hlavně zapisuje → panel první, `order`), tabulka scrolluje vodorovně v `overflow-x: auto` wrapperu, sloupec hráče min-width 64px.
 

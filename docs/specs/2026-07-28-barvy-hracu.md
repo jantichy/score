@@ -31,7 +31,7 @@ skončení hry se barvy hráčů nikde neuplatňují — tam platí výsledkové
 
 ## Použití během hry
 
-Barva vždy jako plocha/linka, nikdy barva textu (kontrast, WEB.md).
+Barva vždy jako plocha/linka, nikdy barva textu (kontrast, web.md).
 
 1. **Graf:** sloupec hráče v jeho barvě. Překročení hraniční čáry (oběma
    směry) se signalizuje **sytějším odstínem téže barvy** (`strong` v paletě)
