@@ -57,8 +57,6 @@ Plná pravidla každé hry žijí v `public/games/<slug>/rules.md`. Když v nich
 
 U CABO byla pravidla konsolidována ze 7 předloh (`public/games/cabo/rules/`); u sporných bodů (penalizace za „Kabo!", hranice konce, kdo dostává 0) platí rozhodnutí zapsaná v `public/games/cabo/rules.md`. **Kamikaze je oficiální pravidlo** (dvě „12" + dvě „13" → hráč 0, ostatní +50), ne domácí varianta.
 
-## Automatické akce
-
-### Autocommit
+## Autocommit
 
 Autocommit je zapnutý.
