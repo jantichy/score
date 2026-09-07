@@ -60,3 +60,5 @@ U CABO byla pravidla konsolidována ze 7 předloh (`public/games/cabo/rules/`); 
 ## Autocommit
 
 Autocommit je zapnutý.
+
+@~/.claude/skills/autocommit/autocommit.md
